@@ -54,6 +54,13 @@ export async function ensureCollection(config: ScsConfig): Promise<QdrantClient>
     }
   }, config);
 
+  await safeQdrantCall(async () => {
+    await client.createPayloadIndex(config.collectionName, {
+      field_name: 'firstEntitySignature',
+      field_schema: 'text',
+    });
+  }, config).catch(() => {});
+
   return client;
 }
 

@@ -31,6 +31,7 @@ program
   .description('Search with natural language queries')
   .argument('[query]', 'Natural language query (omit for interactive mode)')
   .option('-n, --limit <number>', 'Number of results', '10')
+  .option('-m, --mode <type>', 'Search mode: vector | keyword | hybrid', 'hybrid')
   .action(queryCommand);
 
 program

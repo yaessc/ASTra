@@ -1,6 +1,7 @@
 import {
-  loadConfig, initEmbedder, searchCodebase,
+  loadConfig, initEmbedder, searchHybrid,
   ensureCollection, ConfigValidationError, QdrantConnectionError,
+  type SearchMode,
 } from '@scs/core';
 import { intro, spinner, note, outro, text, select, isCancel } from '@clack/prompts';
 import pico from 'picocolors';
@@ -71,12 +72,12 @@ async function openInEditor(filePath: string, line: number): Promise<void> {
   }
 }
 
-async function runSearch(query: string, limit: number): Promise<any[]> {
+async function runSearch(query: string, limit: number, mode: SearchMode): Promise<any[]> {
   const config = loadConfig();
   const s = spinner();
 
   s.start('Searching...');
-  const results = await searchCodebase(query, config, limit);
+  const results = await searchHybrid(query, config, limit, { mode });
   s.stop(`Found ${results.length} results`);
 
   if (results.length === 0) {
@@ -173,7 +174,7 @@ async function handleReplCommand(cmd: string, currentLimit: number): Promise<num
   }
 }
 
-export async function queryCommand(query?: string, options?: { limit?: string }): Promise<void> {
+export async function queryCommand(query?: string, options?: { limit?: string; mode?: string }): Promise<void> {
   let config;
   try {
     config = loadConfig();
@@ -239,9 +240,11 @@ intro(pico.cyan('astra query'));
     return;
   }
 
+  const mode = (options?.mode || 'hybrid') as SearchMode;
+
   if (query) {
     queryHistory.push(query);
-    const results = await runSearch(query, limit);
+    const results = await runSearch(query, limit, mode);
     if (results.length > 0) {
       await postSearchMenu(results);
     }
@@ -279,7 +282,7 @@ intro(pico.cyan('astra query'));
     }
 
     queryHistory.push(trimmed);
-    const results = await runSearch(trimmed, limit);
+    const results = await runSearch(trimmed, limit, mode);
     if (results.length > 0) {
       const next = await postSearchMenu(results);
       if (next === 'exit') {

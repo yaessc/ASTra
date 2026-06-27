@@ -13,7 +13,7 @@ export {
   ensureCollection, indexChunks, deleteFileChunks,
   getIndexStats, resetCollection,
 } from './indexer.js';
-export { searchCodebase } from './query.js';
+export { searchCodebase, searchHybrid, type SearchMode } from './query.js';
 export {
   clearCache, closeCache, setIndexedFile, getIndexedFile,
   removeIndexedChunks, getMetadata, setMetadata,
