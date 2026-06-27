@@ -36,6 +36,8 @@ export async function indexCommand(dir: string = '.', options?: { watch?: boolea
 
   intro(pico.cyan('astra index'));
 
+  const overallStart = Date.now();
+
   const s = spinner();
 
   s.start('Initializing languages...');
@@ -87,8 +89,9 @@ export async function indexCommand(dir: string = '.', options?: { watch?: boolea
   const cachedCount = files.length - changedFiles.length;
 
   if (changedFiles.length === 0) {
+    const elapsed = ((Date.now() - overallStart) / 1000).toFixed(1);
     note('All files are up to date.', 'Index is current');
-    outro(`Checked ${files.length} files (${cachedCount} cached, 0 indexed)`);
+    outro(`${pico.green('✓')} Everything up to date — ${cachedCount} files cached (checked in ${elapsed}s)`);
     return;
   }
 

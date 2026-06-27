@@ -42,7 +42,12 @@ function displayResult(r: { filePath: string; startLine: number; endLine: number
     `${pico.cyan(`${index + 1}.`)} ` +
     `${pico.green(r.filePath)}:${pico.yellow(String(r.startLine))}-${pico.yellow(String(r.endLine))}`
   );
-  console.log(`   ${pico.dim(`Score: ${(r.score * 100).toFixed(1)}%`)}`);
+  const pct = r.score * 100;
+  let tier: string;
+  if (pct >= 85) tier = pico.green(pico.dim(' excellent'));
+  else if (pct >= 70) tier = pico.yellow(pico.dim(' good'));
+  else tier = pico.red(pico.dim(' weak'));
+  console.log(`   ${pico.dim(`Score: ${pct.toFixed(1)}%`)}${tier}`);
   console.log(`   ${pico.dim('┌' + '─'.repeat(50))}`);
 
   const highlighted = formatCode(displayLines.join('\n'), r.language);
@@ -81,9 +86,13 @@ async function runSearch(query: string, limit: number, mode: SearchMode): Promis
   s.stop(`Found ${results.length} results`);
 
   if (results.length === 0) {
-    note('No results found. Try re-indexing with `astra index`.', 'No matches');
+    note(`No results for "${query}". Try: astra index to rebuild, or rephrase with more specific terms.`, 'No matches');
     return results;
   }
+
+  console.log('');
+  console.log(`  ${pico.bold(pico.cyan(`Found ${results.length} results for "${query}"`))}`);
+  console.log('');
 
   for (let i = 0; i < results.length; i++) {
     displayResult(results[i], i);
@@ -93,6 +102,8 @@ async function runSearch(query: string, limit: number, mode: SearchMode): Promis
 }
 
 async function postSearchMenu(results: any[]): Promise<'search' | 'exit'> {
+  console.log(`\n  ${pico.dim('─'.repeat(60))}`);
+
   const action = await select({
     message: 'What next?',
     options: [
@@ -281,6 +292,7 @@ intro(pico.cyan('astra query'));
       continue;
     }
 
+    console.log(`  ${pico.dim(pico.cyan('›'))} ${pico.dim(trimmed)}`);
     queryHistory.push(trimmed);
     const results = await runSearch(trimmed, limit, mode);
     if (results.length > 0) {
