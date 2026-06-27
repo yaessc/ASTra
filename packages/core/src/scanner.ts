@@ -2,7 +2,7 @@ import { readFileSync, statSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { globSync } from 'glob';
 import { createHash } from 'node:crypto';
-import type { ScsConfig, ScannedFile, ScanResult, SupportedLanguage } from './types.js';
+import type { AstraConfig, ScannedFile, ScanResult, SupportedLanguage } from './types.js';
 
 class GitIgnoreMatcher {
   private patterns: string[] = [];
@@ -72,7 +72,7 @@ function detectLanguage(filePath: string): SupportedLanguage | null {
   return null;
 }
 
-export function scanFiles(rootDir: string, config: ScsConfig): ScanResult {
+export function scanFiles(rootDir: string, config: AstraConfig): ScanResult {
   const ig = new GitIgnoreMatcher();
 
   const gitignorePatterns = findGitignore(rootDir);

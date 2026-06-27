@@ -1,6 +1,6 @@
 export type SupportedLanguage = 'typescript' | 'javascript' | 'tsx';
 
-export interface ScsConfig {
+export interface AstraConfig {
   include: string[];
   exclude: string[];
   qdrantUrl: string;

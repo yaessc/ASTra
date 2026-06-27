@@ -1,14 +1,14 @@
 import {
   loadConfig, resetCollection, clearCache,
   ConfigValidationError, QdrantConnectionError,
-} from '@scs/core';
+} from '@astra/core';
 import { intro, spinner, note, outro, confirm, isCancel } from '@clack/prompts';
 import pico from 'picocolors';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 function getCacheDir(): string {
-  return join(tmpdir(), 'scs-cache');
+  return join(tmpdir(), 'astra-cache');
 }
 
 export async function resetCommand(): Promise<void> {
@@ -21,7 +21,7 @@ export async function resetCommand(): Promise<void> {
       for (const issue of err.issues) {
         note(issue.message, 'Config Error');
       }
-      outro('Fix scs.config.json and re-run.');
+      outro('Fix astra.config.json and re-run.');
       return;
     }
     throw err;

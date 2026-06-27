@@ -1,7 +1,7 @@
 import {
   loadConfig, getIndexStats,
   ConfigValidationError, QdrantConnectionError,
-} from '@scs/core';
+} from '@astra/core';
 import { intro, spinner, note, outro } from '@clack/prompts';
 import pico from 'picocolors';
 
@@ -11,11 +11,11 @@ export async function statusCommand(): Promise<void> {
     config = loadConfig();
   } catch (err) {
     if (err instanceof ConfigValidationError) {
-      intro(pico.cyan('scs status'));
+      intro(pico.cyan('astra status'));
       for (const issue of err.issues) {
         note(issue.message, 'Config Error');
       }
-      outro('Fix scs.config.json and re-run.');
+      outro('Fix astra.config.json and re-run.');
       return;
     }
     throw err;

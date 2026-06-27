@@ -1,5 +1,5 @@
 export type {
-  ScsConfig, CodeEntity, CodeChunk, SearchResult, IndexStats,
+  AstraConfig, CodeEntity, CodeChunk, SearchResult, IndexStats,
   SupportedLanguage, IndexedFile, ScanResult, ScannedFile,
 } from './types.js';
 export { loadConfig, writeDefaultConfig } from './config.js';

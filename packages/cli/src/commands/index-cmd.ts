@@ -4,7 +4,7 @@ import {
   chunkEntities, initEmbedder, indexChunks, setIndexedFile,
   getIndexedFile, removeIndexedChunks, deleteFileChunks,
   ConfigValidationError, QdrantConnectionError,
-} from '@scs/core';
+} from '@astra/core';
 import { intro, spinner, note, outro } from '@clack/prompts';
 import pico from 'picocolors';
 import { tmpdir } from 'node:os';
@@ -13,7 +13,7 @@ import cliProgress from 'cli-progress';
 import { ProgressBarManager } from '../utils/progress.js';
 
 function getCacheDir(): string {
-  return join(tmpdir(), 'scs-cache');
+  return join(tmpdir(), 'astra-cache');
 }
 
 export async function indexCommand(dir: string = '.'): Promise<void> {
@@ -28,7 +28,7 @@ export async function indexCommand(dir: string = '.'): Promise<void> {
       for (const issue of err.issues) {
         note(issue.message, 'Config Error');
       }
-      outro('Fix scs.config.json and re-run.');
+      outro('Fix astra.config.json and re-run.');
       return;
     }
     throw err;
@@ -74,7 +74,7 @@ export async function indexCommand(dir: string = '.'): Promise<void> {
   s.stop(`Found ${files.length} files`);
 
   if (files.length === 0) {
-    note('No TypeScript/JavaScript files found. Check your scs.config.json include patterns.', 'Nothing to index');
+    note('No TypeScript/JavaScript files found. Check your astra.config.json include patterns.', 'Nothing to index');
     outro('Done');
     return;
   }

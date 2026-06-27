@@ -2,7 +2,7 @@ import {
   loadConfig, initEmbedder, searchHybrid,
   ensureCollection, ConfigValidationError, QdrantConnectionError,
   type SearchMode,
-} from '@scs/core';
+} from '@astra/core';
 import { intro, spinner, note, outro, text, select, isCancel } from '@clack/prompts';
 import pico from 'picocolors';
 import { exec } from 'node:child_process';
@@ -195,7 +195,7 @@ intro(pico.cyan('astra query'));
       for (const issue of err.issues) {
         note(issue.message, 'Config Error');
       }
-      outro('Fix scs.config.json and re-run.');
+      outro('Fix astra.config.json and re-run.');
       return;
     }
     throw err;
@@ -203,7 +203,7 @@ intro(pico.cyan('astra query'));
 
   let limit = parseInt(options?.limit || '10', 10);
 
-  intro(pico.cyan('scs query'));
+  intro(pico.cyan('astra query'));
 
   const s = spinner();
   s.start('Initializing...');

@@ -1,5 +1,5 @@
 {
-  "name": "@scs/core",
+  "name": "@astra/core",
   "version": "0.1.0",
   "private": true,
   "type": "module",

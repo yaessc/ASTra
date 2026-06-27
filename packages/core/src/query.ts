@@ -1,11 +1,11 @@
 import { QdrantClient } from '@qdrant/js-client-rest';
-import type { ScsConfig, SearchResult } from './types.js';
+import type { AstraConfig, SearchResult } from './types.js';
 import { embedText } from './embedder.js';
 import { wrapQdrantError, QdrantConnectionError } from './errors.js';
 
 export type SearchMode = 'vector' | 'keyword' | 'hybrid';
 
-function createClient(config: ScsConfig): QdrantClient {
+function createClient(config: AstraConfig): QdrantClient {
   try {
     return new QdrantClient({ url: config.qdrantUrl });
   } catch (err) {
@@ -13,7 +13,7 @@ function createClient(config: ScsConfig): QdrantClient {
   }
 }
 
-async function safeQdrantCall<T>(fn: () => Promise<T>, config: ScsConfig): Promise<T> {
+async function safeQdrantCall<T>(fn: () => Promise<T>, config: AstraConfig): Promise<T> {
   try {
     return await fn();
   } catch (err) {
@@ -38,7 +38,7 @@ function mapResult(r: any): SearchResult {
 
 export async function searchCodebase(
   query: string,
-  config: ScsConfig,
+  config: AstraConfig,
   limit: number = 10,
 ): Promise<SearchResult[]> {
   const client = createClient(config);
@@ -57,7 +57,7 @@ export async function searchCodebase(
 
 async function keywordSearch(
   query: string,
-  config: ScsConfig,
+  config: AstraConfig,
   limit: number,
 ): Promise<SearchResult[]> {
   const tokens = query
@@ -146,7 +146,7 @@ function rrfMerge(
 
 export async function searchHybrid(
   query: string,
-  config: ScsConfig,
+  config: AstraConfig,
   limit: number = 10,
   options?: { mode?: SearchMode },
 ): Promise<SearchResult[]> {

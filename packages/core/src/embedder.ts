@@ -1,9 +1,9 @@
-import type { ScsConfig, CodeChunk } from './types.js';
+import type { AstraConfig, CodeChunk } from './types.js';
 
 let pipelineFn: ((modelId: string, progressCallback?: (progress: any) => void) => any) | null = null;
 
 export async function initEmbedder(
-  config: ScsConfig,
+  config: AstraConfig,
   onProgress?: (progress: any) => void,
 ): Promise<void> {
   const transformers = await import('@xenova/transformers');
@@ -13,7 +13,7 @@ export async function initEmbedder(
     });
 }
 
-export async function embedText(text: string, config: ScsConfig): Promise<number[]> {
+export async function embedText(text: string, config: AstraConfig): Promise<number[]> {
   if (!pipelineFn) await initEmbedder(config);
 
   const extractor = await pipelineFn!(config.modelId);
@@ -24,7 +24,7 @@ export async function embedText(text: string, config: ScsConfig): Promise<number
 
 export async function embedBatch(
   texts: string[],
-  config: ScsConfig,
+  config: AstraConfig,
   onProgress?: (loaded: number, total: number) => void,
 ): Promise<number[][]> {
   if (!pipelineFn) await initEmbedder(config);

@@ -1,5 +1,5 @@
 import { QdrantClient } from '@qdrant/js-client-rest';
-import type { ScsConfig, CodeChunk, IndexStats } from './types.js';
+import type { AstraConfig, CodeChunk, IndexStats } from './types.js';
 import { embedBatch, formatCodeForEmbedding } from './embedder.js';
 import { storeChunkQdrantId, removeIndexedChunks } from './cache.js';
 import { wrapQdrantError, QdrantConnectionError } from './errors.js';
@@ -7,10 +7,10 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
 function getCacheDir(): string {
-  return join(tmpdir(), 'scs-cache');
+  return join(tmpdir(), 'astra-cache');
 }
 
-function createClient(config: ScsConfig): QdrantClient {
+function createClient(config: AstraConfig): QdrantClient {
   try {
     return new QdrantClient({ url: config.qdrantUrl });
   } catch (err) {
@@ -18,7 +18,7 @@ function createClient(config: ScsConfig): QdrantClient {
   }
 }
 
-async function safeQdrantCall<T>(fn: () => Promise<T>, config: ScsConfig): Promise<T> {
+async function safeQdrantCall<T>(fn: () => Promise<T>, config: AstraConfig): Promise<T> {
   try {
     return await fn();
   } catch (err) {
@@ -41,7 +41,7 @@ function chunkToPayload(chunk: CodeChunk) {
   };
 }
 
-export async function ensureCollection(config: ScsConfig): Promise<QdrantClient> {
+export async function ensureCollection(config: AstraConfig): Promise<QdrantClient> {
   const client = createClient(config);
 
   await safeQdrantCall(async () => {
@@ -64,7 +64,7 @@ export async function ensureCollection(config: ScsConfig): Promise<QdrantClient>
   return client;
 }
 
-export async function indexChunks(chunks: CodeChunk[], config: ScsConfig): Promise<void> {
+export async function indexChunks(chunks: CodeChunk[], config: AstraConfig): Promise<void> {
   const client = await ensureCollection(config);
   const cacheDir = getCacheDir();
 
@@ -106,7 +106,7 @@ export async function indexChunks(chunks: CodeChunk[], config: ScsConfig): Promi
   }
 }
 
-export async function deleteFileChunks(filePath: string, config: ScsConfig): Promise<void> {
+export async function deleteFileChunks(filePath: string, config: AstraConfig): Promise<void> {
   const client = createClient(config);
   try {
     await safeQdrantCall(async () => {
@@ -120,7 +120,7 @@ export async function deleteFileChunks(filePath: string, config: ScsConfig): Pro
   } catch {}
 }
 
-export async function getIndexStats(config: ScsConfig): Promise<IndexStats> {
+export async function getIndexStats(config: AstraConfig): Promise<IndexStats> {
   const client = createClient(config);
 
   try {
@@ -145,7 +145,7 @@ export async function getIndexStats(config: ScsConfig): Promise<IndexStats> {
   }
 }
 
-export async function resetCollection(config: ScsConfig): Promise<void> {
+export async function resetCollection(config: AstraConfig): Promise<void> {
   const client = createClient(config);
   try {
     await safeQdrantCall(async () => {

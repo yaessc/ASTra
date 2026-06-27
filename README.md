@@ -68,7 +68,7 @@ astra query "Which function handles payment webhooks?" --limit 5 --mode hybrid
 
 | Command | Description |
 |---------|-------------|
-| `astra init [path]` | Interactive wizard — prompts for directories, extensions, excludes; creates `scs.config.json` with ASCII banner |
+| `astra init [path]` | Interactive wizard — prompts for directories, extensions, excludes; creates \`astra.config.json\` with ASCII banner |
 | `astra index [path]` | Index a directory: parses ASTs, extracts entities, generates chunks (metadata + body), embeds with Transformers.js, and stores in Qdrant. Shows progress bars for model download and indexing. Uses SQLite cache for incremental re-indexing. |
 | `astra query [query]` | Search with a natural language query. Omit for **interactive REPL** (`:help`, `:clear`, `:history`, `:limit N`, `:exit`). Supports `--limit N` and `--mode vector\|keyword\|hybrid`. Results include code preview with syntax highlighting and an "Open in editor" menu. |
 | `astra status` | Show index statistics — collection name, total chunks, vector size (384), Qdrant URL, model ID |
@@ -97,7 +97,7 @@ semantic-code-search/
 ├── packages/
 │   ├── core/              # AST parsing, chunking, embeddings, Qdrant indexing
 │   │   └── src/
-│   │       ├── config.ts      # scs.config.json loader (Zod-validated)
+│   │       ├── config.ts      # astra.config.json loader (Zod-validated)
 │   │       ├── scanner.ts     # File discovery (glob + .gitignore)
 │   │       ├── languages.ts   # web-tree-sitter WASM grammar init
 │   │       ├── parser.ts      # Parse source into tree-sitter AST
@@ -118,7 +118,7 @@ semantic-code-search/
 ├── docker-compose.yml     # Qdrant vector DB
 ├── tsconfig.base.json     # Shared TS config
 ├── turbo.json             # Turborepo task definitions
-└── scs.config.json        # User configuration
+└── astra.config.json        # User configuration
 ```
 
 ## Search modes
@@ -133,7 +133,7 @@ Use `--mode` to control how queries are matched:
 
 Default is `hybrid`.
 
-## Configuration (`scs.config.json`)
+## Configuration (\`astra.config.json\`)
 
 ```json
 {

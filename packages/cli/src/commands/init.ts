@@ -65,10 +65,10 @@ export async function initCommand(dir: string = '.'): Promise<void> {
   printBanner();
   intro(pico.cyan('astra init'));
 
-  const configPath = join(targetDir, 'scs.config.json');
+  const configPath = join(targetDir, 'astra.config.json');
   if (existsSync(configPath)) {
     const overwrite = await confirm({
-      message: `scs.config.json already exists in ${targetDir}. Overwrite?`,
+      message: `astra.config.json already exists in ${targetDir}. Overwrite?`,
     });
     if (isCancel(overwrite) || !overwrite) {
       outro('Cancelled');
