@@ -23,7 +23,7 @@ export async function indexCommand(dir: string = '.', options?: { watch?: boolea
     config = loadConfig(rootDir);
   } catch (err) {
     if (err instanceof ConfigValidationError) {
-      intro(pico.cyan('scs index'));
+      intro(pico.cyan('astra index'));
       for (const issue of err.issues) {
         note(issue.message, 'Config Error');
       }
@@ -33,7 +33,7 @@ export async function indexCommand(dir: string = '.', options?: { watch?: boolea
     throw err;
   }
 
-  intro(pico.cyan('scs index'));
+  intro(pico.cyan('astra index'));
 
   const s = spinner();
 
@@ -177,6 +177,6 @@ export async function indexCommand(dir: string = '.', options?: { watch?: boolea
   outro(
     `Indexed ${files.length} files in ${elapsed}s` +
     ` (${cachedCount} cached, ${processedFiles} indexed${errorCount > 0 ? `, ${errorCount} errors` : ''})` +
-    `. Run ${pico.cyan('scs query')} to search.`
+    `. Run ${pico.cyan('astra query')} to search.`
   );
 }

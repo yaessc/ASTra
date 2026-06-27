@@ -21,7 +21,7 @@ export async function statusCommand(): Promise<void> {
     throw err;
   }
 
-  intro(pico.cyan('scs status'));
+  intro(pico.cyan('astra status'));
 
   const s = spinner();
   s.start('Fetching index stats...');
@@ -47,5 +47,5 @@ Model:        ${pico.dim(config.modelId)}`,
     }
   }
 
-  outro('Run `scs index` to (re)index your codebase.');
+  outro('Run `astra index` to (re)index your codebase.');
 }

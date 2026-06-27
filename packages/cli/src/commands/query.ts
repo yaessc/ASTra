@@ -80,7 +80,7 @@ async function runSearch(query: string, limit: number): Promise<any[]> {
   s.stop(`Found ${results.length} results`);
 
   if (results.length === 0) {
-    note('No results found. Try re-indexing with `scs index`.', 'No matches');
+    note('No results found. Try re-indexing with `astra index`.', 'No matches');
     return results;
   }
 
@@ -179,7 +179,7 @@ export async function queryCommand(query?: string, options?: { limit?: string })
     config = loadConfig();
   } catch (err) {
     if (err instanceof ConfigValidationError) {
-      intro(pico.cyan('scs query'));
+intro(pico.cyan('astra query'));
       for (const issue of err.issues) {
         note(issue.message, 'Config Error');
       }

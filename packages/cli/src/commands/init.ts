@@ -50,9 +50,20 @@ function generateConfig(answers: InitAnswers): string {
   return JSON.stringify(config, null, 2);
 }
 
+function printBanner(): void {
+  console.log('');
+  console.log(`         ${pico.dim('.')}    ${pico.yellow('*')}    ${pico.dim('.')}    ${pico.yellow('*')}    ${pico.dim('.')}`);
+  console.log(`              ${pico.dim('+')}         ${pico.dim('+')}`);
+  console.log(`       ${pico.yellow('*')}  ${pico.dim('+')}  ${pico.bold(pico.cyan('A S T R A'))}  ${pico.dim('+')}  ${pico.yellow('*')}`);
+  console.log(`              ${pico.dim('+')}         ${pico.dim('+')}`);
+  console.log(`         ${pico.yellow('*')}    ${pico.dim('.')}    ${pico.yellow('*')}    ${pico.dim('.')}    ${pico.yellow('*')}`);
+  console.log('');
+}
+
 export async function initCommand(dir: string = '.'): Promise<void> {
   const targetDir = resolve(dir);
-  intro(pico.cyan('scs init'));
+  printBanner();
+  intro(pico.cyan('astra init'));
 
   const configPath = join(targetDir, 'scs.config.json');
   if (existsSync(configPath)) {
@@ -115,5 +126,5 @@ export async function initCommand(dir: string = '.'): Promise<void> {
 
   writeFileSync(configPath, json, 'utf-8');
   note(`Created ${configPath}`, 'Done');
-  outro('Run `scs index` to start indexing your codebase.');
+  outro('Run `astra index` to start indexing your codebase.');
 }

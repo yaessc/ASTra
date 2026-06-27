@@ -9,13 +9,13 @@ import { resetCommand } from './commands/reset.js';
 const program = new Command();
 
 program
-  .name('scs')
-  .description('Semantic Code Search — natural language search for your codebase')
+  .name('astra')
+  .description('ASTra — semantic code search, powered by AST parsing and vector embeddings')
   .version('0.1.0');
 
 program
   .command('init')
-  .description('Create a default scs.config.json in the specified directory')
+  .description('Create an ASTra configuration file')
   .argument('[path]', 'Directory for config', '.')
   .action(initCommand);
 
@@ -28,7 +28,7 @@ program
 
 program
   .command('query')
-  .description('Search the indexed codebase with a natural language query')
+  .description('Search with natural language queries')
   .argument('[query]', 'Natural language query (omit for interactive mode)')
   .option('-n, --limit <number>', 'Number of results', '10')
   .action(queryCommand);

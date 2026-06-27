@@ -17,7 +17,7 @@ export async function resetCommand(): Promise<void> {
     config = loadConfig();
   } catch (err) {
     if (err instanceof ConfigValidationError) {
-      intro(pico.cyan('scs reset'));
+      intro(pico.cyan('astra reset'));
       for (const issue of err.issues) {
         note(issue.message, 'Config Error');
       }
@@ -27,7 +27,7 @@ export async function resetCommand(): Promise<void> {
     throw err;
   }
 
-  intro(pico.cyan('scs reset'));
+  intro(pico.cyan('astra reset'));
 
   const proceed = await confirm({
     message: 'This will delete the entire index. Continue?',
@@ -45,7 +45,7 @@ export async function resetCommand(): Promise<void> {
     await resetCollection(config);
     clearCache(getCacheDir());
     s.stop('Index reset complete');
-    note('Run `scs index` to rebuild the index from scratch.', 'Next Step');
+    note('Run `astra index` to rebuild the index from scratch.', 'Next Step');
   } catch (err) {
     s.stop('Error resetting index');
     if (err instanceof QdrantConnectionError) {
