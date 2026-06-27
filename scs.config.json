@@ -1,0 +1,20 @@
+{
+  "include": [
+    "packages/*/src/**/*.ts",
+    "packages/*/src/**/*.tsx",
+    "packages/*/src/**/*.js",
+    "packages/*/src/**/*.jsx"
+  ],
+  "exclude": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/build/**",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "**/*.d.ts"
+  ],
+  "qdrantUrl": "http://localhost:6333",
+  "collectionName": "code_chunks",
+  "modelId": "Xenova/all-MiniLM-L6-v2",
+  "maxChunkSize": 50
+}
