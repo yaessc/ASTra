@@ -2,11 +2,29 @@ import { QdrantClient } from '@qdrant/js-client-rest';
 import type { ScsConfig, CodeChunk, IndexStats } from './types.js';
 import { embedBatch, formatCodeForEmbedding } from './embedder.js';
 import { storeChunkQdrantId, removeIndexedChunks } from './cache.js';
+import { wrapQdrantError, QdrantConnectionError } from './errors.js';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
 function getCacheDir(): string {
   return join(tmpdir(), 'scs-cache');
+}
+
+function createClient(config: ScsConfig): QdrantClient {
+  try {
+    return new QdrantClient({ url: config.qdrantUrl });
+  } catch (err) {
+    throw wrapQdrantError(err, config.qdrantUrl);
+  }
+}
+
+async function safeQdrantCall<T>(fn: () => Promise<T>, config: ScsConfig): Promise<T> {
+  try {
+    return await fn();
+  } catch (err) {
+    if (err instanceof QdrantConnectionError) throw err;
+    throw wrapQdrantError(err, config.qdrantUrl);
+  }
 }
 
 function chunkToPayload(chunk: CodeChunk) {
@@ -23,19 +41,17 @@ function chunkToPayload(chunk: CodeChunk) {
 }
 
 export async function ensureCollection(config: ScsConfig): Promise<QdrantClient> {
-  const client = new QdrantClient({ url: config.qdrantUrl });
+  const client = createClient(config);
 
-  const collections = await client.getCollections();
-  const exists = collections.collections.some(c => c.name === config.collectionName);
-
-  if (!exists) {
-    await client.createCollection(config.collectionName, {
-      vectors: {
-        size: 384,
-        distance: 'Cosine',
-      },
-    });
-  }
+  await safeQdrantCall(async () => {
+    const collections = await client.getCollections();
+    const exists = collections.collections.some(c => c.name === config.collectionName);
+    if (!exists) {
+      await client.createCollection(config.collectionName, {
+        vectors: { size: 384, distance: 'Cosine' },
+      });
+    }
+  }, config);
 
   return client;
 }
@@ -53,53 +69,56 @@ export async function indexChunks(chunks: CodeChunk[], config: ScsConfig): Promi
     payload: chunkToPayload(chunk),
   }));
 
-  // Remove old chunks for these files
   const filePaths = [...new Set(chunks.map(c => c.filePath))];
   for (const fp of filePaths) {
-    try {
+    await safeQdrantCall(async () => {
       await client.delete(config.collectionName, {
         wait: true,
         filter: {
           must: [{ key: 'filePath', match: { value: fp } }],
         },
       });
-    } catch {}
+    }, config).catch(() => {});
     removeIndexedChunks(cacheDir, fp);
   }
 
-  // Upsert new chunks
   const batchSize = 100;
   for (let i = 0; i < points.length; i += batchSize) {
     const batch = points.slice(i, i + batchSize);
-    await client.upsert(config.collectionName, {
-      wait: true,
-      points: batch,
-    });
+    await safeQdrantCall(async () => {
+      await client.upsert(config.collectionName, {
+        wait: true,
+        points: batch,
+      });
+    }, config);
   }
 
-  // Store mapping
   for (const chunk of chunks) {
     storeChunkQdrantId(cacheDir, chunk.id, chunk.filePath, chunk.startLine, chunk.endLine, String(chunkToId(chunk)));
   }
 }
 
 export async function deleteFileChunks(filePath: string, config: ScsConfig): Promise<void> {
-  const client = new QdrantClient({ url: config.qdrantUrl });
+  const client = createClient(config);
   try {
-    await client.delete(config.collectionName, {
-      wait: true,
-      filter: {
-        must: [{ key: 'filePath', match: { value: filePath } }],
-      },
-    });
+    await safeQdrantCall(async () => {
+      await client.delete(config.collectionName, {
+        wait: true,
+        filter: {
+          must: [{ key: 'filePath', match: { value: filePath } }],
+        },
+      });
+    }, config);
   } catch {}
 }
 
 export async function getIndexStats(config: ScsConfig): Promise<IndexStats> {
-  const client = new QdrantClient({ url: config.qdrantUrl });
+  const client = createClient(config);
 
   try {
-    const info = await client.getCollection(config.collectionName);
+    const info = await safeQdrantCall(async () => {
+      return await client.getCollection(config.collectionName);
+    }, config);
     const count = info.points_count ?? 0;
 
     return {
@@ -119,9 +138,11 @@ export async function getIndexStats(config: ScsConfig): Promise<IndexStats> {
 }
 
 export async function resetCollection(config: ScsConfig): Promise<void> {
-  const client = new QdrantClient({ url: config.qdrantUrl });
+  const client = createClient(config);
   try {
-    await client.deleteCollection(config.collectionName);
+    await safeQdrantCall(async () => {
+      await client.deleteCollection(config.collectionName);
+    }, config);
   } catch {}
 }
 

@@ -1,10 +1,16 @@
 import type { ScsConfig } from './types.js';
 
-let pipelineFn: ((modelId: string) => any) | null = null;
+let pipelineFn: ((modelId: string, progressCallback?: (progress: any) => void) => any) | null = null;
 
-export async function initEmbedder(config: ScsConfig): Promise<void> {
+export async function initEmbedder(
+  config: ScsConfig,
+  onProgress?: (progress: any) => void,
+): Promise<void> {
   const transformers = await import('@xenova/transformers');
-  pipelineFn = (modelId: string) => transformers.pipeline('feature-extraction', modelId);
+  pipelineFn = (modelId: string, progressCallback?: (progress: any) => void) =>
+    transformers.pipeline('feature-extraction', modelId, {
+      progress_callback: progressCallback,
+    });
 }
 
 export async function embedText(text: string, config: ScsConfig): Promise<number[]> {
@@ -16,7 +22,11 @@ export async function embedText(text: string, config: ScsConfig): Promise<number
   return Array.from(result.data as Float32Array);
 }
 
-export async function embedBatch(texts: string[], config: ScsConfig): Promise<number[][]> {
+export async function embedBatch(
+  texts: string[],
+  config: ScsConfig,
+  onProgress?: (loaded: number, total: number) => void,
+): Promise<number[][]> {
   if (!pipelineFn) await initEmbedder(config);
 
   const extractor = await pipelineFn!(config.modelId);
@@ -27,17 +37,24 @@ export async function embedBatch(texts: string[], config: ScsConfig): Promise<nu
   for (let i = 0; i < texts.length; i += batchSize) {
     const batch = texts.slice(i, i + batchSize);
     const outputs = await Promise.all(
-      batch.map(t => extractor(t, { pooling: 'mean', normalize: true }))
+      batch.map(t => extractor(t, { pooling: 'mean', normalize: true })),
     );
     for (const output of outputs) {
       results.push(Array.from(output.data as Float32Array));
+    }
+    if (onProgress) {
+      onProgress(Math.min(i + batchSize, texts.length), texts.length);
     }
   }
 
   return results;
 }
 
-export function formatCodeForEmbedding(chunk: { content: string; filePath: string; entities: { type: string; name: string; signature: string }[] }): string {
+export function formatCodeForEmbedding(chunk: {
+  content: string;
+  filePath: string;
+  entities: { type: string; name: string; signature: string }[];
+}): string {
   const parts: string[] = [];
 
   for (const entity of chunk.entities) {

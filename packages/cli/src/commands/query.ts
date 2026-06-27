@@ -1,12 +1,13 @@
 import {
   loadConfig, initEmbedder, searchCodebase,
-  ensureCollection,
+  ensureCollection, ConfigValidationError, QdrantConnectionError,
 } from '@scs/core';
 import { intro, spinner, note, outro, text, select, isCancel } from '@clack/prompts';
 import pico from 'picocolors';
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
 import { createEmphasize, common } from 'emphasize';
+import cliProgress from 'cli-progress';
 
 const execAsync = promisify(exec);
 const emph = createEmphasize(common);
@@ -173,23 +174,80 @@ async function handleReplCommand(cmd: string, currentLimit: number): Promise<num
 }
 
 export async function queryCommand(query?: string, options?: { limit?: string }): Promise<void> {
-  const config = loadConfig();
+  let config;
+  try {
+    config = loadConfig();
+  } catch (err) {
+    if (err instanceof ConfigValidationError) {
+      intro(pico.cyan('scs query'));
+      for (const issue of err.issues) {
+        note(issue.message, 'Config Error');
+      }
+      outro('Fix scs.config.json and re-run.');
+      return;
+    }
+    throw err;
+  }
+
   let limit = parseInt(options?.limit || '10', 10);
 
   intro(pico.cyan('scs query'));
 
   const s = spinner();
   s.start('Initializing...');
-  await initEmbedder(config);
+
+  let modelBar: any = null;
+  let lastFile = '';
+
   try {
-    await ensureCollection(config);
-  } catch {
-    s.stop('Warning: Qdrant not reachable');
-    note('Make sure Qdrant is running: docker compose up -d', 'Qdrant Required');
+    await initEmbedder(config, (progress: any) => {
+      if (progress.status === 'initiate') {
+        lastFile = progress.file || '';
+        if (!modelBar) {
+          modelBar = new cliProgress.SingleBar({
+            format: `${pico.cyan('Downloading')} ${pico.dim('{file}')} |{bar}| ${pico.green('{percentage}%')} {loadedMb}/{totalMb} MB`,
+            barCompleteChar: '█',
+            barIncompleteChar: '░',
+            hideCursor: true,
+            clearOnComplete: true,
+          });
+          modelBar.start(100, 0, { file: lastFile, loadedMb: '0.0', totalMb: '0.0' });
+        }
+      }
+      if (progress.status === 'progress' && modelBar) {
+        const totalMb = (progress.total / 1024 / 1024).toFixed(1);
+        const loadedMb = (progress.loaded / 1024 / 1024).toFixed(1);
+        modelBar.update(progress.progress ?? 0, { file: lastFile, loadedMb, totalMb });
+      }
+      if (progress.status === 'done' || progress.status === 'ready') {
+        if (modelBar) {
+          modelBar.stop();
+          modelBar = null;
+        }
+      }
+    });
+
+    try {
+      await ensureCollection(config);
+    } catch (err) {
+      if (err instanceof QdrantConnectionError) {
+        s.stop('Qdrant not reachable');
+        note(err.message, 'Qdrant Error');
+        outro('Done');
+        return;
+      }
+      throw err;
+    }
+
+    s.stop('Ready');
+  } catch (err) {
+    (modelBar as cliProgress.SingleBar | null)?.stop();
+    modelBar = null;
+    s.stop('Initialization failed');
+    note(err instanceof Error ? err.message : String(err), 'Error');
     outro('Done');
     return;
   }
-  s.stop('Ready');
 
   if (query) {
     queryHistory.push(query);

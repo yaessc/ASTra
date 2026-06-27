@@ -1,9 +1,25 @@
-import { loadConfig, getIndexStats } from '@scs/core';
+import {
+  loadConfig, getIndexStats,
+  ConfigValidationError, QdrantConnectionError,
+} from '@scs/core';
 import { intro, spinner, note, outro } from '@clack/prompts';
 import pico from 'picocolors';
 
 export async function statusCommand(): Promise<void> {
-  const config = loadConfig();
+  let config;
+  try {
+    config = loadConfig();
+  } catch (err) {
+    if (err instanceof ConfigValidationError) {
+      intro(pico.cyan('scs status'));
+      for (const issue of err.issues) {
+        note(issue.message, 'Config Error');
+      }
+      outro('Fix scs.config.json and re-run.');
+      return;
+    }
+    throw err;
+  }
 
   intro(pico.cyan('scs status'));
 
@@ -24,7 +40,11 @@ Model:        ${pico.dim(config.modelId)}`,
     );
   } catch (err) {
     s.stop('Error fetching stats');
-    note('Could not connect to Qdrant. Is it running?', 'Error');
+    if (err instanceof QdrantConnectionError) {
+      note(err.message, 'Qdrant Error');
+    } else {
+      note('Could not connect to Qdrant. Is it running?', 'Error');
+    }
   }
 
   outro('Run `scs index` to (re)index your codebase.');

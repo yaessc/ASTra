@@ -1,4 +1,7 @@
-import { loadConfig, resetCollection, clearCache } from '@scs/core';
+import {
+  loadConfig, resetCollection, clearCache,
+  ConfigValidationError, QdrantConnectionError,
+} from '@scs/core';
 import { intro, spinner, note, outro, confirm, isCancel } from '@clack/prompts';
 import pico from 'picocolors';
 import { tmpdir } from 'node:os';
@@ -9,7 +12,20 @@ function getCacheDir(): string {
 }
 
 export async function resetCommand(): Promise<void> {
-  const config = loadConfig();
+  let config;
+  try {
+    config = loadConfig();
+  } catch (err) {
+    if (err instanceof ConfigValidationError) {
+      intro(pico.cyan('scs reset'));
+      for (const issue of err.issues) {
+        note(issue.message, 'Config Error');
+      }
+      outro('Fix scs.config.json and re-run.');
+      return;
+    }
+    throw err;
+  }
 
   intro(pico.cyan('scs reset'));
 
@@ -32,7 +48,11 @@ export async function resetCommand(): Promise<void> {
     note('Run `scs index` to rebuild the index from scratch.', 'Next Step');
   } catch (err) {
     s.stop('Error resetting index');
-    note('Could not reset the index. Is Qdrant running?', 'Error');
+    if (err instanceof QdrantConnectionError) {
+      note(err.message, 'Qdrant Error');
+    } else {
+      note('Could not reset the index. Is Qdrant running?', 'Error');
+    }
   }
 
   outro('Done');

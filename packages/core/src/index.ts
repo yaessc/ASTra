@@ -18,3 +18,7 @@ export {
   clearCache, closeCache, setIndexedFile, getIndexedFile,
   removeIndexedChunks, getMetadata, setMetadata,
 } from './cache.js';
+export {
+  QdrantConnectionError, ModelLoadError, ConfigValidationError,
+  isQdrantError, wrapQdrantError,
+} from './errors.js';
