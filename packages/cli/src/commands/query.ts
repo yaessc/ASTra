@@ -7,7 +7,7 @@ import pico from 'picocolors';
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
 import { createEmphasize, common } from 'emphasize';
-import cliProgress from 'cli-progress';
+import { ProgressBarManager } from '../utils/progress.js';
 
 const execAsync = promisify(exec);
 const emph = createEmphasize(common);
@@ -196,34 +196,25 @@ intro(pico.cyan('astra query'));
   const s = spinner();
   s.start('Initializing...');
 
-  let modelBar: any = null;
+  const modelBar = new ProgressBarManager();
   let lastFile = '';
+  const DOWNLOAD_FMT = `${pico.cyan('Downloading')} ${pico.dim('{file}')} |{bar}| ${pico.green('{percentage}%')} {loadedMb}/{totalMb} MB`;
 
   try {
     await initEmbedder(config, (progress: any) => {
       if (progress.status === 'initiate') {
         lastFile = progress.file || '';
-        if (!modelBar) {
-          modelBar = new cliProgress.SingleBar({
-            format: `${pico.cyan('Downloading')} ${pico.dim('{file}')} |{bar}| ${pico.green('{percentage}%')} {loadedMb}/{totalMb} MB`,
-            barCompleteChar: '█',
-            barIncompleteChar: '░',
-            hideCursor: true,
-            clearOnComplete: true,
-          });
-          modelBar.start(100, 0, { file: lastFile, loadedMb: '0.0', totalMb: '0.0' });
+        if (!modelBar.isRunning) {
+          modelBar.start(DOWNLOAD_FMT, 100, 0, { file: lastFile, loadedMb: '0.0', totalMb: '0.0' });
         }
       }
-      if (progress.status === 'progress' && modelBar) {
+      if (progress.status === 'progress' && modelBar.isRunning) {
         const totalMb = (progress.total / 1024 / 1024).toFixed(1);
         const loadedMb = (progress.loaded / 1024 / 1024).toFixed(1);
         modelBar.update(progress.progress ?? 0, { file: lastFile, loadedMb, totalMb });
       }
       if (progress.status === 'done' || progress.status === 'ready') {
-        if (modelBar) {
-          modelBar.stop();
-          modelBar = null;
-        }
+        modelBar.stop();
       }
     });
 
@@ -241,8 +232,7 @@ intro(pico.cyan('astra query'));
 
     s.stop('Ready');
   } catch (err) {
-    (modelBar as cliProgress.SingleBar | null)?.stop();
-    modelBar = null;
+    modelBar.stop();
     s.stop('Initialization failed');
     note(err instanceof Error ? err.message : String(err), 'Error');
     outro('Done');

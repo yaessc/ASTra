@@ -10,6 +10,7 @@ import pico from 'picocolors';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import cliProgress from 'cli-progress';
+import { ProgressBarManager } from '../utils/progress.js';
 
 function getCacheDir(): string {
   return join(tmpdir(), 'scs-cache');
@@ -43,33 +44,24 @@ export async function indexCommand(dir: string = '.', options?: { watch?: boolea
 
   s.start('Initializing embedding model...');
 
-  let modelBar: any = null;
+  const modelBar = new ProgressBarManager();
   let lastFile = '';
+  const DOWNLOAD_FMT = `${pico.cyan('Downloading')} ${pico.dim('{file}')} |{bar}| ${pico.green('{percentage}%')} {loadedMb}/{totalMb} MB`;
 
   await initEmbedder(config, (progress: any) => {
     if (progress.status === 'initiate') {
       lastFile = progress.file || '';
-      if (!modelBar) {
-        modelBar = new cliProgress.SingleBar({
-          format: `${pico.cyan('Downloading')} ${pico.dim('{file}')} |{bar}| ${pico.green('{percentage}%')} {loadedMb}/{totalMb} MB`,
-          barCompleteChar: '█',
-          barIncompleteChar: '░',
-          hideCursor: true,
-          clearOnComplete: true,
-        });
-        modelBar.start(100, 0, { file: lastFile, loadedMb: '0.0', totalMb: '0.0' });
+      if (!modelBar.isRunning) {
+        modelBar.start(DOWNLOAD_FMT, 100, 0, { file: lastFile, loadedMb: '0.0', totalMb: '0.0' });
       }
     }
-    if (progress.status === 'progress' && modelBar) {
+    if (progress.status === 'progress' && modelBar.isRunning) {
       const totalMb = (progress.total / 1024 / 1024).toFixed(1);
       const loadedMb = (progress.loaded / 1024 / 1024).toFixed(1);
       modelBar.update(progress.progress ?? 0, { file: lastFile, loadedMb, totalMb });
     }
     if (progress.status === 'done' || progress.status === 'ready') {
-      if (modelBar) {
-        modelBar.stop();
-        modelBar = null;
-      }
+      modelBar.stop();
     }
   });
 
