@@ -8,6 +8,7 @@ import { intro, spinner, note, outro } from '@clack/prompts';
 import pico from 'picocolors';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import cliProgress from 'cli-progress';
 
 function getCacheDir(): string {
   return join(tmpdir(), 'scs-cache');
@@ -41,7 +42,6 @@ export async function indexCommand(dir: string = '.', options?: { watch?: boolea
 
   const cacheDir = getCacheDir();
 
-  // Filter only changed files
   const changedFiles = files.filter(f => {
     const cached = getIndexedFile(cacheDir, f.path);
     return !cached || cached.hash !== f.hash;
@@ -53,10 +53,10 @@ export async function indexCommand(dir: string = '.', options?: { watch?: boolea
     return;
   }
 
-  s.start(`Processing ${changedFiles.length} changed files...`);
+  s.start(`Parsing ${changedFiles.length} files...`);
 
-  let totalChunks = 0;
-  let processedFiles = 0;
+  // Phase 1: Parse all files and compute chunks upfront
+  const allChunks: { file: typeof changedFiles[0]; chunks: any[] }[] = [];
 
   for (const file of changedFiles) {
     try {
@@ -64,12 +64,39 @@ export async function indexCommand(dir: string = '.', options?: { watch?: boolea
       const chunks = chunkEntities(entities, file.relativePath, file.content, file.language, {
         maxChunkSize: config.maxChunkSize,
       });
+      allChunks.push({ file, chunks });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      note(`${file.relativePath}: ${msg}`, 'Warning');
+    }
+  }
 
-      // Remove old chunks
+  const totalChunks = allChunks.reduce((sum, { chunks }) => sum + chunks.length, 0);
+  s.stop(`Parsed ${changedFiles.length} files (${totalChunks} chunks)`);
+
+  // Phase 2 & 3: Embed and index with progress bar
+  const progressBar = new cliProgress.SingleBar({
+    format:
+      `${pico.cyan('Indexing')} |{bar}| ` +
+      `${pico.green('{percentage}%')} ` +
+      `{value}/{total} chunks ` +
+      `${pico.dim('| ETA: {eta}s | {speed} ch/s')}`,
+    barCompleteChar: '█',
+    barIncompleteChar: '░',
+    hideCursor: true,
+  });
+
+  progressBar.start(totalChunks, 0, { speed: '0' });
+
+  let processedFiles = 0;
+  let chunksDone = 0;
+  const startTime = Date.now();
+
+  for (const { file, chunks } of allChunks) {
+    try {
       removeIndexedChunks(cacheDir, file.relativePath);
       await deleteFileChunks(file.relativePath, config);
 
-      // Index new chunks
       await indexChunks(chunks, config);
 
       setIndexedFile(cacheDir, {
@@ -78,15 +105,18 @@ export async function indexCommand(dir: string = '.', options?: { watch?: boolea
         hash: file.hash,
       });
 
-      totalChunks += chunks.length;
       processedFiles++;
+      chunksDone += chunks.length;
+      const elapsed = (Date.now() - startTime) / 1000;
+      const speed = elapsed > 0 ? Math.round(chunksDone / elapsed) : 0;
+      progressBar.update(chunksDone, { speed: String(speed) });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       note(`${file.relativePath}: ${msg}`, 'Warning');
     }
   }
 
-  s.stop(`Indexed ${processedFiles} files (${totalChunks} chunks)`);
+  progressBar.stop();
 
-  outro('Codebase indexed. Run `scs query` to search.');
+  outro(`Indexed ${processedFiles} files (${chunksDone} chunks). Run ${pico.cyan('scs query')} to search.`);
 }

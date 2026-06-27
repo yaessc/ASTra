@@ -1,12 +1,119 @@
-import { writeDefaultConfig } from '@scs/core';
-import { intro, note, outro } from '@clack/prompts';
+import { writeFileSync, existsSync } from 'node:fs';
+import { join } from 'node:path';
+import { intro, note, outro, text, multiselect, confirm, isCancel } from '@clack/prompts';
 import pico from 'picocolors';
 import { resolve } from 'node:path';
 
-export function initCommand(dir: string = '.'): void {
+interface InitAnswers {
+  directories: string[];
+  extensions: string[];
+  excludeStandard: boolean;
+  extraExcludes: string[];
+}
+
+function generateConfig(answers: InitAnswers): string {
+  const extMap: Record<string, string> = {
+    '.ts': '*.ts',
+    '.tsx': '*.tsx',
+    '.js': '*.js',
+    '.jsx': '*.jsx',
+  };
+
+  const globSuffixes = answers.extensions.map(e => extMap[e] || `*${e}`);
+
+  const include: string[] = [];
+  if (answers.directories.length === 0 || (answers.directories.length === 1 && answers.directories[0] === '.')) {
+    include.push(...globSuffixes.map(s => `**/${s}`));
+  } else {
+    for (const dir of answers.directories) {
+      for (const suffix of globSuffixes) {
+        include.push(`${dir}/**/${suffix}`);
+      }
+    }
+  }
+
+  const exclude: string[] = [];
+  if (answers.excludeStandard) {
+    exclude.push('**/node_modules/**', '**/dist/**', '**/build/**');
+  }
+  exclude.push(...answers.extraExcludes);
+
+  const config = {
+    include,
+    exclude,
+    qdrantUrl: 'http://localhost:6333',
+    collectionName: 'code_chunks',
+    modelId: 'Xenova/all-MiniLM-L6-v2',
+    maxChunkSize: 50,
+  };
+
+  return JSON.stringify(config, null, 2);
+}
+
+export async function initCommand(dir: string = '.'): Promise<void> {
   const targetDir = resolve(dir);
   intro(pico.cyan('scs init'));
-  writeDefaultConfig(targetDir);
-  note(`Created scs.config.json in ${targetDir}`, 'Done');
-  outro('Edit scs.config.json to customize paths and settings.');
+
+  const configPath = join(targetDir, 'scs.config.json');
+  if (existsSync(configPath)) {
+    const overwrite = await confirm({
+      message: `scs.config.json already exists in ${targetDir}. Overwrite?`,
+    });
+    if (isCancel(overwrite) || !overwrite) {
+      outro('Cancelled');
+      return;
+    }
+  }
+
+  const dirsRaw = await text({
+    message: 'Which directories contain your source code? (comma-separated)',
+    placeholder: 'src, packages, server, client, common',
+    defaultValue: 'src',
+    validate: (v) => v.trim().length > 0 ? undefined : 'At least one directory is required',
+  });
+
+  if (isCancel(dirsRaw)) { outro('Cancelled'); return; }
+
+  const directories = dirsRaw.split(',').map(d => d.trim()).filter(Boolean);
+
+  const extResult = await multiselect({
+    message: 'What file extensions do you want to index?',
+    options: [
+      { value: '.ts', label: 'TypeScript (.ts)', hint: 'recommended' },
+      { value: '.tsx', label: 'TypeScript React (.tsx)' },
+      { value: '.js', label: 'JavaScript (.js)' },
+      { value: '.jsx', label: 'JavaScript React (.jsx)' },
+    ],
+    required: true,
+  });
+
+  if (isCancel(extResult)) { outro('Cancelled'); return; }
+  const extensions = extResult as string[];
+
+  const excludeStdResult = await confirm({
+    message: 'Exclude standard directories (node_modules, dist, build)?',
+    initialValue: true,
+  });
+
+  if (isCancel(excludeStdResult)) { outro('Cancelled'); return; }
+  const excludeStandard = excludeStdResult as boolean;
+
+  const extraRaw = await text({
+    message: 'Extra exclude patterns? (comma-separated, or leave empty)',
+    placeholder: '**/*.test.ts, **/*.generated.ts, **/__tests__/**',
+    defaultValue: '',
+  });
+
+  if (isCancel(extraRaw)) { outro('Cancelled'); return; }
+
+  const extraExcludes = extraRaw
+    ? extraRaw.split(',').map(p => p.trim()).filter(Boolean)
+    : [];
+
+  const answers: InitAnswers = { directories, extensions, excludeStandard, extraExcludes };
+  const json = generateConfig(answers);
+
+  writeFileSync(configPath, json, 'utf-8');
+  note(`Created ${configPath}`, 'Done');
+  outro('Run `scs index` to start indexing your codebase.');
 }
