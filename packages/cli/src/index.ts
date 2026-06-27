@@ -23,7 +23,6 @@ program
   .command('index')
   .description('Index a codebase for semantic search')
   .argument('[path]', 'Directory to index', '.')
-  .option('-w, --watch', 'Watch for file changes and re-index')
   .action(indexCommand);
 
 program

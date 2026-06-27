@@ -16,7 +16,7 @@ function getCacheDir(): string {
   return join(tmpdir(), 'scs-cache');
 }
 
-export async function indexCommand(dir: string = '.', options?: { watch?: boolean }): Promise<void> {
+export async function indexCommand(dir: string = '.'): Promise<void> {
   const rootDir = resolve(dir || '.');
   let config;
 
