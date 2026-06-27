@@ -110,7 +110,7 @@ async function keywordSearch(
   }));
 }
 
-function rrfMerge(
+export function rrfMerge(
   vectorResults: SearchResult[],
   keywordResults: SearchResult[],
   limit: number,
