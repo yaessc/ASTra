@@ -1,4 +1,4 @@
-import type { ScsConfig } from './types.js';
+import type { ScsConfig, CodeChunk } from './types.js';
 
 let pipelineFn: ((modelId: string, progressCallback?: (progress: any) => void) => any) | null = null;
 
@@ -50,11 +50,11 @@ export async function embedBatch(
   return results;
 }
 
-export function formatCodeForEmbedding(chunk: {
-  content: string;
-  filePath: string;
-  entities: { type: string; name: string; signature: string }[];
-}): string {
+export function formatCodeForEmbedding(chunk: CodeChunk): string {
+  if (chunk.chunkType === 'metadata') {
+    return chunk.content;
+  }
+
   const parts: string[] = [];
 
   for (const entity of chunk.entities) {

@@ -46,5 +46,6 @@ export async function searchCodebase(
     code: (r.payload as any)?.code || '',
     entities: [],
     language: (r.payload as any)?.language || 'typescript',
+    chunkType: (r.payload as any)?.chunkType || 'body',
   }));
 }

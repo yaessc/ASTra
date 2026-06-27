@@ -37,6 +37,7 @@ function chunkToPayload(chunk: CodeChunk) {
     firstEntitySignature: chunk.entities[0]?.signature || '',
     code: chunk.content.slice(0, 4000),
     language: chunk.language,
+    chunkType: chunk.chunkType,
   };
 }
 

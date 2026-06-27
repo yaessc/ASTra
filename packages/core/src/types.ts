@@ -29,6 +29,7 @@ export interface CodeChunk {
   content: string;
   entities: CodeEntity[];
   language: SupportedLanguage;
+  chunkType: 'metadata' | 'body';
 }
 
 export interface SearchResult {
@@ -40,6 +41,7 @@ export interface SearchResult {
   code: string;
   entities: CodeEntity[];
   language: SupportedLanguage;
+  chunkType: 'metadata' | 'body';
 }
 
 export interface IndexStats {

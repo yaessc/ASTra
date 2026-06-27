@@ -3,6 +3,8 @@ import { join } from 'node:path';
 import { existsSync, mkdirSync } from 'node:fs';
 import type { IndexedFile } from './types.js';
 
+const SCHEMA_VERSION = '2';
+
 let db: Database.Database | null = null;
 
 function getDb(cacheDir: string): Database.Database {
@@ -31,6 +33,13 @@ function getDb(cacheDir: string): Database.Database {
       value TEXT
     );
   `);
+
+  const row = db.prepare('SELECT value FROM metadata WHERE key = ?').get('schema_version') as any;
+  if (!row || row.value !== SCHEMA_VERSION) {
+    db.exec('DELETE FROM indexed_files; DELETE FROM indexed_chunks; DELETE FROM metadata;');
+    db.prepare('INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)').run('schema_version', SCHEMA_VERSION);
+  }
+
   return db;
 }
 
