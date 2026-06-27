@@ -136,7 +136,7 @@ async function postSearchMenu(results: any[]): Promise<'search' | 'exit'> {
   return 'search';
 }
 
-async function handleReplCommand(cmd: string, currentLimit: number): Promise<number | null> {
+async function handleReplCommand(cmd: string, currentLimit: number, currentMode: SearchMode): Promise<{ limit?: number; mode?: SearchMode } | -1 | null> {
   switch (true) {
     case cmd === ':help':
       console.log(`
@@ -144,6 +144,7 @@ async function handleReplCommand(cmd: string, currentLimit: number): Promise<num
   ${pico.cyan(':help')}     Show this help
   ${pico.cyan(':clear')}    Clear the screen
   ${pico.cyan(':limit N')}  Set result limit (e.g. :limit 5)
+  ${pico.cyan(':mode M')}   Set search mode: vector | keyword | hybrid
   ${pico.cyan(':history')}  Show query history
   ${pico.cyan(':exit')}     Exit
 
@@ -177,7 +178,16 @@ async function handleReplCommand(cmd: string, currentLimit: number): Promise<num
         return null;
       }
       console.log(`  ${pico.green(`Limit set to ${n}`)}`);
-      return n;
+      return { limit: n };
+
+    case cmd.startsWith(':mode '):
+      const m = cmd.slice(6).trim().toLowerCase();
+      if (m !== 'vector' && m !== 'keyword' && m !== 'hybrid') {
+        console.log(`  ${pico.yellow('Usage:')} :mode vector | keyword | hybrid`);
+        return null;
+      }
+      console.log(`  ${pico.green(`Mode set to ${m}`)}`);
+      return { mode: m as SearchMode };
 
     default:
       console.log(`  ${pico.yellow('Unknown command:')} ${cmd}. Type ${pico.cyan(':help')} for available commands.`);
@@ -251,7 +261,7 @@ intro(pico.cyan('astra query'));
     return;
   }
 
-  const mode = (options?.mode || 'hybrid') as SearchMode;
+  let mode = (options?.mode || 'hybrid') as SearchMode;
 
   if (query) {
     queryHistory.push(query);
@@ -281,13 +291,14 @@ intro(pico.cyan('astra query'));
     const trimmed = q.trim();
 
     if (trimmed.startsWith(':')) {
-      const result = await handleReplCommand(trimmed, limit);
+      const result = await handleReplCommand(trimmed, limit, mode);
       if (result === -1) {
         outro('Goodbye!');
         break;
       }
       if (result !== null) {
-        limit = result;
+        if (result.limit !== undefined) limit = result.limit;
+        if (result.mode !== undefined) mode = result.mode;
       }
       continue;
     }
