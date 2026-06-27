@@ -6,10 +6,45 @@ Built with `web-tree-sitter` for AST parsing, `Transformers.js` for local embedd
 
 ## How it works
 
-```
-Filesystem → Glob → tree-sitter AST → Extract entities → Chunk → Embed → Qdrant (vector DB)
-                                                                             ↓
-NL query → Embed → Vector search → Top-k results with file:line + code preview
+```mermaid
+flowchart TD
+    subgraph Input[" "]
+        A["Local Codebase"]
+    end
+
+    subgraph Parse["Parse & Extract"]
+        B["Glob scanner"]
+        C["web-tree-sitter<br/>(WASM AST parser)"]
+        D["Entity extractor<br/>(functions, classes, interfaces...)"]
+        E["Chunker"]
+    end
+
+    subgraph Embed["Embed"]
+        F["Transformers.js<br/>(all-MiniLM-L6-v2)"]
+    end
+
+    subgraph Store["Vector DB"]
+        G[("Qdrant<br/>(Docker container)")]
+    end
+
+    subgraph Query["Query"]
+        H["Natural language query"]
+        I["Transformers.js<br/>(same model)"]
+        J["Vector search<br/>(Cosine, top-k)"]
+    end
+
+    subgraph UI["User Interface"]
+        K["CLI + REPL<br/>(ranked results, code preview,<br/>open in editor)"]
+    end
+
+    A --> B --> C --> D --> E --> F --> G
+    H --> I --> J --> G
+    J --> K
+    G -.- J
+
+    style A fill:#2d3748,color:#fff
+    style G fill:#2b6cb0,color:#fff
+    style K fill:#276749,color:#fff
 ```
 
 ## Quick start
