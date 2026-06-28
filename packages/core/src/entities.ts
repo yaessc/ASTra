@@ -179,7 +179,7 @@ function collectEntities(node: SyntaxNode, source: string, filePath: string, lan
   function walk(n: SyntaxNode) {
     const type = n.type;
 
-    if (type === 'function_declaration' || type === 'arrow_function') {
+    if (type === 'function_declaration') {
       const e = extractFunction(n, source, filePath, language);
       if (e) entities.push(e);
     } else if (type === 'method_definition') {
@@ -200,6 +200,73 @@ function collectEntities(node: SyntaxNode, source: string, filePath: string, lan
     } else if (type === 'decorator') {
       const e = extractDecorator(n, source, filePath, language);
       if (e) entities.push(e);
+    } else if (type === 'variable_declarator') {
+      const nameNode = n.childForFieldName('name');
+      const valueNode = n.childForFieldName('value');
+      if (!nameNode) return;
+
+      const name = getNodeText(nameNode, source);
+
+      if (valueNode && (valueNode.type === 'arrow_function' || valueNode.type === 'function')) {
+        const range = getNodeRange(valueNode);
+        entities.push({
+          type: 'function',
+          name,
+          filePath,
+          startLine: range.startLine,
+          endLine: range.endLine,
+          signature: getNodeText(valueNode, source).split('\n')[0].trim(),
+          code: getNodeText(valueNode, source),
+          docComment: findDocComment(valueNode, source),
+          language,
+        });
+        return;
+      }
+
+      const range = getNodeRange(n);
+      entities.push({
+        type: 'variable',
+        name,
+        filePath,
+        startLine: range.startLine,
+        endLine: range.endLine,
+        signature: getNodeText(n, source).split('\n')[0].trim(),
+        code: getNodeText(n, source),
+        docComment: findDocComment(n, source),
+        language,
+      });
+    } else if (type === 'import_statement') {
+      const sourceNode = n.childForFieldName('source');
+      const name = sourceNode ? getNodeText(sourceNode, source) : '<anonymous>';
+      const range = getNodeRange(n);
+      entities.push({
+        type: 'import',
+        name,
+        filePath,
+        startLine: range.startLine,
+        endLine: range.endLine,
+        signature: getNodeText(n, source).split('\n')[0].trim(),
+        code: getNodeText(n, source),
+        docComment: '',
+        language,
+      });
+    } else if (type === 'export_statement') {
+      if (!n.childForFieldName('declaration')) {
+        const sourceNode = n.childForFieldName('source');
+        const name = sourceNode ? `* from ${getNodeText(sourceNode, source)}` : getNodeText(n, source).split('\n')[0].trim();
+        const range = getNodeRange(n);
+        entities.push({
+          type: 'export',
+          name,
+          filePath,
+          startLine: range.startLine,
+          endLine: range.endLine,
+          signature: getNodeText(n, source).split('\n')[0].trim(),
+          code: getNodeText(n, source),
+          docComment: '',
+          language,
+        });
+      }
     }
 
     for (let i = 0; i < n.namedChildCount; i++) {
