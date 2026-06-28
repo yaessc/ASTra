@@ -71,7 +71,7 @@ astra query "auth middleware" -C /path/to/project     # from any directory
 |---------|-------------|
 | `astra init [path]` | Interactive wizard — prompts for directories, extensions, excludes; creates \`astra.config.json\` with ASCII banner |
 | `astra index [path]` | Index a directory: parses ASTs, extracts entities, generates chunks (metadata + body), embeds with Transformers.js, and stores in Qdrant. Shows progress bars for model download and indexing. Uses SQLite cache for incremental re-indexing. |
-| `astra query [query]` | Search with a natural language query. Omit for **interactive REPL** (`:help`, `:clear`, `:history`, `:limit N`, `:exit`). Supports `--limit N`, `--mode vector\|keyword\|hybrid`, and `-C, --dir <path>` to specify project root from any directory. Results include code preview with syntax highlighting and an "Open in editor" menu. |
+| `astra query [query]` | Search with a natural language query. Omit for **interactive REPL** (`:help`, `:clear`, `:history`, `:limit N`, `:mode M`, `:exit`). Supports `--limit N`, `--mode vector\|keyword\|hybrid`, and `-C, --dir <path>` to specify project root from any directory. Results include code preview with syntax highlighting and an "Open in editor" menu. |
 | `astra status [-C, --dir <path>]` | Show index statistics — collection name, total chunks, vector size (384), Qdrant URL, model ID |
 | `astra reset [-C, --dir <path>]` | Clear the index and Qdrant collection. Prompts for confirmation before deleting. |
 
@@ -172,6 +172,7 @@ Running `astra query` without arguments starts a REPL:
 | `:clear` | Clear the screen |
 | `:history` | Show previous query history |
 | `:limit N` | Set result limit (e.g. `:limit 5`) |
+| `:mode M` | Set search mode: `vector`, `keyword`, or `hybrid` |
 | `:exit` | Exit the REPL |
 
 ## Tech stack
