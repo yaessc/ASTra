@@ -16,7 +16,8 @@ export {
 export { searchCodebase, searchHybrid, type SearchMode } from './query.js';
 export {
   clearCache, closeCache, setIndexedFile, getIndexedFile,
-  removeIndexedChunks, getMetadata, setMetadata,
+  removeIndexedFile, removeIndexedChunks, getAllIndexedFilePaths,
+  getMetadata, setMetadata,
 } from './cache.js';
 export {
   QdrantConnectionError, ModelLoadError, ConfigValidationError,

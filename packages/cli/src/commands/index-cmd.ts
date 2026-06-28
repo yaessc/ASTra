@@ -2,7 +2,8 @@ import { resolve } from 'node:path';
 import {
   loadConfig, scanFiles, initLanguages, extractEntities,
   chunkEntities, initEmbedder, indexChunks, setIndexedFile,
-  getIndexedFile, removeIndexedChunks, deleteFileChunks,
+  getIndexedFile, getAllIndexedFilePaths,
+  removeIndexedFile, removeIndexedChunks, deleteFileChunks,
   ConfigValidationError, QdrantConnectionError,
 } from '@astra/core';
 import { intro, spinner, note, outro } from '@clack/prompts';
@@ -73,16 +74,29 @@ export async function indexCommand(dir: string = '.'): Promise<void> {
   const { files } = scanFiles(rootDir, config);
   s.stop(`Found ${files.length} files`);
 
+  const cacheDir = getCacheDir();
+  const cachedPaths = getAllIndexedFilePaths(cacheDir);
+  const scannedPaths = new Set(files.map(f => f.relativePath));
+  const staleFiles = cachedPaths.filter(p => !scannedPaths.has(p));
+
+  if (staleFiles.length > 0) {
+    s.start(`Removing ${staleFiles.length} deleted files from index...`);
+    for (const fp of staleFiles) {
+      await deleteFileChunks(fp, config).catch(() => {});
+      removeIndexedFile(cacheDir, fp);
+      removeIndexedChunks(cacheDir, fp);
+    }
+    s.stop(`Removed ${staleFiles.length} deleted files`);
+  }
+
   if (files.length === 0) {
     note('No TypeScript/JavaScript files found. Check your astra.config.json include patterns.', 'Nothing to index');
     outro('Done');
     return;
   }
 
-  const cacheDir = getCacheDir();
-
   const changedFiles = files.filter(f => {
-    const cached = getIndexedFile(cacheDir, f.path);
+    const cached = getIndexedFile(cacheDir, f.relativePath);
     return !cached || cached.hash !== f.hash;
   });
 
@@ -139,7 +153,7 @@ export async function indexCommand(dir: string = '.'): Promise<void> {
       await deleteFileChunks(file.relativePath, config);
       await indexChunks(chunks, config);
       setIndexedFile(cacheDir, {
-        path: file.path,
+        path: file.relativePath,
         mtime: file.mtime,
         hash: file.hash,
       });

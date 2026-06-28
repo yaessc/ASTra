@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { existsSync, mkdirSync } from 'node:fs';
 import type { IndexedFile } from './types.js';
 
-const SCHEMA_VERSION = '2';
+const SCHEMA_VERSION = '3';
 
 let db: Database.Database | null = null;
 
@@ -47,6 +47,12 @@ export function getIndexedFile(cacheDir: string, filePath: string): IndexedFile 
   const d = getDb(cacheDir);
   const row = d.prepare('SELECT path, mtime, hash FROM indexed_files WHERE path = ?').get(filePath) as any;
   return row ? { path: row.path, mtime: row.mtime, hash: row.hash } : null;
+}
+
+export function getAllIndexedFilePaths(cacheDir: string): string[] {
+  const d = getDb(cacheDir);
+  const rows = d.prepare('SELECT path FROM indexed_files').all() as any[];
+  return rows.map(r => r.path);
 }
 
 export function setIndexedFile(cacheDir: string, file: IndexedFile): void {
