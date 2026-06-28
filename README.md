@@ -102,7 +102,12 @@ semantic-code-search/
 │   │       ├── scanner.ts     # File discovery (glob + .gitignore)
 │   │       ├── languages.ts   # web-tree-sitter WASM grammar init
 │   │       ├── parser.ts      # Parse source into tree-sitter AST
-│   │       ├── entities.ts    # Walk AST → extract code entities
+│   │       ├── entities.ts    # Walk AST → extract via visitor registry
+│   │       ├── visitors/      # Language-specific entity handlers
+│   │       │   ├── types.ts       # EntityHandler type
+│   │       │   ├── registry.ts    # Language → handler map
+│   │       │   ├── doc-comment.ts # JSDoc comment extraction
+│   │       │   └── ts-visitor.ts  # TypeScript/JavaScript handlers
 │   │       ├── chunker.ts     # Group entities into indexable chunks
 │   │       ├── embedder.ts    # Transformers.js (all-MiniLM-L6-v2)
 │   │       ├── indexer.ts     # Qdrant upsert/delete/collection management
