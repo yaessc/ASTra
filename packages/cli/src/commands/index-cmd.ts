@@ -82,9 +82,13 @@ export async function indexCommand(dir: string = '.'): Promise<void> {
   if (staleFiles.length > 0) {
     s.start(`Removing ${staleFiles.length} deleted files from index...`);
     for (const fp of staleFiles) {
-      await deleteFileChunks(fp, config).catch(() => {});
-      removeIndexedFile(cacheDir, fp);
-      removeIndexedChunks(cacheDir, fp);
+      try {
+        await deleteFileChunks(fp, config);
+        removeIndexedFile(cacheDir, fp);
+        removeIndexedChunks(cacheDir, fp);
+      } catch {
+        note(`Could not remove ${fp} from Qdrant. Will retry on next index.`, 'Warning');
+      }
     }
     s.stop(`Removed ${staleFiles.length} deleted files`);
   }

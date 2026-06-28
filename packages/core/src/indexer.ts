@@ -86,7 +86,7 @@ export async function indexChunks(chunks: CodeChunk[], config: AstraConfig): Pro
           must: [{ key: 'filePath', match: { value: fp } }],
         },
       });
-    }, config).catch(() => {});
+    }, config);
     removeIndexedChunks(cacheDir, fp);
   }
 
@@ -117,7 +117,9 @@ export async function deleteFileChunks(filePath: string, config: AstraConfig): P
         },
       });
     }, config);
-  } catch {}
+  } catch (err) {
+    if (err instanceof QdrantConnectionError) throw err;
+  }
 }
 
 export async function getIndexStats(config: AstraConfig): Promise<IndexStats> {
@@ -135,7 +137,8 @@ export async function getIndexStats(config: AstraConfig): Promise<IndexStats> {
       lastIndexed: null,
       collectionSize: count,
     };
-  } catch {
+  } catch (err) {
+    if (err instanceof QdrantConnectionError) throw err;
     return {
       totalFiles: 0,
       totalChunks: 0,
@@ -151,7 +154,9 @@ export async function resetCollection(config: AstraConfig): Promise<void> {
     await safeQdrantCall(async () => {
       await client.deleteCollection(config.collectionName);
     }, config);
-  } catch {}
+  } catch (err) {
+    if (err instanceof QdrantConnectionError) throw err;
+  }
 }
 
 function chunkToId(chunk: CodeChunk): number {
