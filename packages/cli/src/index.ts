@@ -31,16 +31,19 @@ program
   .argument('[query]', 'Natural language query (omit for interactive mode)')
   .option('-n, --limit <number>', 'Number of results', '10')
   .option('-m, --mode <type>', 'Search mode: vector | keyword | hybrid', 'hybrid')
+  .option('-C, --dir <path>', 'Project root directory', '.')
   .action(queryCommand);
 
 program
   .command('status')
   .description('Show index statistics')
+  .option('-C, --dir <path>', 'Project root directory', '.')
   .action(statusCommand);
 
 program
   .command('reset')
   .description('Clear the index and re-index from scratch')
+  .option('-C, --dir <path>', 'Project root directory', '.')
   .action(resetCommand);
 
 program.parse();

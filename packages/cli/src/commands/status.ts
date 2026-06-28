@@ -4,11 +4,12 @@ import {
 } from '@astra/core';
 import { intro, spinner, note, outro } from '@clack/prompts';
 import pico from 'picocolors';
+import { resolve } from 'node:path';
 
-export async function statusCommand(): Promise<void> {
+export async function statusCommand(options?: { dir?: string }): Promise<void> {
   let config;
   try {
-    config = loadConfig();
+    config = loadConfig(resolve(options?.dir || '.'));
   } catch (err) {
     if (err instanceof ConfigValidationError) {
       intro(pico.cyan('astra status'));

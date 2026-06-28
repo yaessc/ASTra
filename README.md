@@ -62,6 +62,7 @@ astra index /path/to/project
 # 4. Search with natural language
 astra query "Where is the authentication middleware?"
 astra query "Which function handles payment webhooks?" --limit 5 --mode hybrid
+astra query "auth middleware" -C /path/to/project     # from any directory
 ```
 
 ## CLI commands
@@ -70,9 +71,9 @@ astra query "Which function handles payment webhooks?" --limit 5 --mode hybrid
 |---------|-------------|
 | `astra init [path]` | Interactive wizard — prompts for directories, extensions, excludes; creates \`astra.config.json\` with ASCII banner |
 | `astra index [path]` | Index a directory: parses ASTs, extracts entities, generates chunks (metadata + body), embeds with Transformers.js, and stores in Qdrant. Shows progress bars for model download and indexing. Uses SQLite cache for incremental re-indexing. |
-| `astra query [query]` | Search with a natural language query. Omit for **interactive REPL** (`:help`, `:clear`, `:history`, `:limit N`, `:exit`). Supports `--limit N` and `--mode vector\|keyword\|hybrid`. Results include code preview with syntax highlighting and an "Open in editor" menu. |
-| `astra status` | Show index statistics — collection name, total chunks, vector size (384), Qdrant URL, model ID |
-| `astra reset` | Clear the index and Qdrant collection. Prompts for confirmation before deleting. |
+| `astra query [query]` | Search with a natural language query. Omit for **interactive REPL** (`:help`, `:clear`, `:history`, `:limit N`, `:exit`). Supports `--limit N`, `--mode vector\|keyword\|hybrid`, and `-C, --dir <path>` to specify project root from any directory. Results include code preview with syntax highlighting and an "Open in editor" menu. |
+| `astra status [-C, --dir <path>]` | Show index statistics — collection name, total chunks, vector size (384), Qdrant URL, model ID |
+| `astra reset [-C, --dir <path>]` | Clear the index and Qdrant collection. Prompts for confirmation before deleting. |
 
 ## What it extracts from code
 

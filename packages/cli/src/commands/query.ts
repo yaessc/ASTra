@@ -1,10 +1,11 @@
 import {
   loadConfig, initEmbedder, searchHybrid,
   ensureCollection, ConfigValidationError, QdrantConnectionError,
-  type SearchMode,
+  type SearchMode, type AstraConfig,
 } from '@astra/core';
 import { intro, spinner, note, outro, text, select, isCancel } from '@clack/prompts';
 import pico from 'picocolors';
+import { resolve, join } from 'node:path';
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
 import { createEmphasize, common } from 'emphasize';
@@ -64,21 +65,20 @@ function displayResult(r: { filePath: string; startLine: number; endLine: number
   console.log(` ${' '.repeat(lineNumWidth)} ${pico.dim('└' + '─'.repeat(50))}`);
 }
 
-async function openInEditor(filePath: string, line: number): Promise<void> {
+async function openInEditor(filePath: string, line: number, rootDir: string): Promise<void> {
   try {
-    await execAsync(`code -g "${filePath}:${line}"`);
+    await execAsync(`code -g "${join(rootDir, filePath)}:${line}"`);
   } catch {
     try {
       const editor = process.env.EDITOR || 'vim';
-      await execAsync(`${editor} "${filePath}" +${line}`);
+      await execAsync(`${editor} "${join(rootDir, filePath)}" +${line}`);
     } catch (e) {
       note(`Could not open editor. File: ${filePath}:${line}`, 'Open Failed');
     }
   }
 }
 
-async function runSearch(query: string, limit: number, mode: SearchMode): Promise<any[]> {
-  const config = loadConfig();
+async function runSearch(query: string, limit: number, mode: SearchMode, config: AstraConfig, rootDir: string): Promise<any[]> {
   const s = spinner();
 
   s.start('Searching...');
@@ -101,7 +101,7 @@ async function runSearch(query: string, limit: number, mode: SearchMode): Promis
   return results;
 }
 
-async function postSearchMenu(results: any[]): Promise<'search' | 'exit'> {
+async function postSearchMenu(results: any[], rootDir: string): Promise<'search' | 'exit'> {
   console.log(`\n  ${pico.dim('─'.repeat(60))}`);
 
   const action = await select({
@@ -129,7 +129,7 @@ async function postSearchMenu(results: any[]): Promise<'search' | 'exit'> {
 
     if (!isCancel(selected)) {
       const r = results[selected as number];
-      await openInEditor(r.filePath, r.startLine);
+      await openInEditor(r.filePath, r.startLine, rootDir);
     }
   }
 
@@ -195,10 +195,11 @@ async function handleReplCommand(cmd: string, currentLimit: number, currentMode:
   }
 }
 
-export async function queryCommand(query?: string, options?: { limit?: string; mode?: string }): Promise<void> {
+export async function queryCommand(query?: string, options?: { limit?: string; mode?: string; dir?: string }): Promise<void> {
+  const rootDir = resolve(options?.dir || '.');
   let config;
   try {
-    config = loadConfig();
+    config = loadConfig(rootDir);
   } catch (err) {
     if (err instanceof ConfigValidationError) {
 intro(pico.cyan('astra query'));
@@ -265,9 +266,9 @@ intro(pico.cyan('astra query'));
 
   if (query) {
     queryHistory.push(query);
-    const results = await runSearch(query, limit, mode);
+    const results = await runSearch(query, limit, mode, config, rootDir);
     if (results.length > 0) {
-      await postSearchMenu(results);
+      await postSearchMenu(results, rootDir);
     }
     outro('Done');
     return;
@@ -305,9 +306,9 @@ intro(pico.cyan('astra query'));
 
     console.log(`  ${pico.dim(pico.cyan('›'))} ${pico.dim(trimmed)}`);
     queryHistory.push(trimmed);
-    const results = await runSearch(trimmed, limit, mode);
+    const results = await runSearch(trimmed, limit, mode, config, rootDir);
     if (results.length > 0) {
-      const next = await postSearchMenu(results);
+      const next = await postSearchMenu(results, rootDir);
       if (next === 'exit') {
         outro('Goodbye!');
         break;

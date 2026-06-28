@@ -5,16 +5,16 @@ import {
 import { intro, spinner, note, outro, confirm, isCancel } from '@clack/prompts';
 import pico from 'picocolors';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { resolve, join } from 'node:path';
 
 function getCacheDir(): string {
   return join(tmpdir(), 'astra-cache');
 }
 
-export async function resetCommand(): Promise<void> {
+export async function resetCommand(options?: { dir?: string }): Promise<void> {
   let config;
   try {
-    config = loadConfig();
+    config = loadConfig(resolve(options?.dir || '.'));
   } catch (err) {
     if (err instanceof ConfigValidationError) {
       intro(pico.cyan('astra reset'));
