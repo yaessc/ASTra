@@ -188,6 +188,8 @@ Running `astra query` without arguments starts a REPL:
 | CLI | Commander + Clack prompts |
 | Monorepo | Turborepo, TypeScript ESM |
 
+> Query latency ~800ms on a 112-file TypeScript codebase (WSL, local Qdrant). Model initialization adds ~3–4s on first invocation; subsequent queries in REPL mode skip this.
+
 ## Example queries
 
 ```
