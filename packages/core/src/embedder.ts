@@ -1,24 +1,21 @@
 import type { AstraConfig, CodeChunk } from './types.js';
 
-let pipelineFn: ((modelId: string, progressCallback?: (progress: any) => void) => any) | null = null;
+let extractor: any = null;
 
 export async function initEmbedder(
   config: AstraConfig,
   onProgress?: (progress: any) => void,
 ): Promise<void> {
-  const transformers = await import('@xenova/transformers');
-  pipelineFn = (modelId: string, progressCallback?: (progress: any) => void) =>
-    transformers.pipeline('feature-extraction', modelId, {
-      progress_callback: progressCallback,
-    });
+  if (extractor) return;
+  const { pipeline } = await import('@xenova/transformers');
+  extractor = await pipeline('feature-extraction', config.modelId, {
+    progress_callback: onProgress,
+  });
 }
 
 export async function embedText(text: string, config: AstraConfig): Promise<number[]> {
-  if (!pipelineFn) await initEmbedder(config);
-
-  const extractor = await pipelineFn!(config.modelId);
+  if (!extractor) await initEmbedder(config);
   const result = await extractor(text, { pooling: 'mean', normalize: true });
-
   return Array.from(result.data as Float32Array);
 }
 
@@ -27,9 +24,7 @@ export async function embedBatch(
   config: AstraConfig,
   onProgress?: (loaded: number, total: number) => void,
 ): Promise<number[][]> {
-  if (!pipelineFn) await initEmbedder(config);
-
-  const extractor = await pipelineFn!(config.modelId);
+  if (!extractor) await initEmbedder(config);
 
   const results: number[][] = [];
   const batchSize = 16;
