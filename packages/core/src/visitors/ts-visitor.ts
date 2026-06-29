@@ -80,14 +80,14 @@ export const tsHandlers: Record<string, EntityHandler> = {
     const name = getNodeText(nameNode, source);
 
     if (valueNode && (valueNode.type === 'arrow_function' || valueNode.type === 'function')) {
-      const range = getNodeRange(valueNode);
+      const range = getNodeRange(node);
       return {
         type: 'function',
         name,
         filePath,
         startLine: range.startLine,
         endLine: range.endLine,
-        signature: firstLine(valueNode, source),
+        signature: firstLine(node, source),
         code: getNodeText(valueNode, source),
         docComment: findDocComment(valueNode, source),
         language,
