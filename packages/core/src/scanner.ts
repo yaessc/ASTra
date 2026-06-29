@@ -92,7 +92,7 @@ export function scanFiles(rootDir: string, config: AstraConfig): ScanResult {
 
   for (const filePath of allFiles) {
     try {
-      const relPath = relative(rootDir, filePath);
+      const relPath = relative(rootDir, filePath).replace(/\\/g, '/');
       if (ig.ignores(relPath)) continue;
 
       const language = detectLanguage(filePath);
