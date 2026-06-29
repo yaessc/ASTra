@@ -1,21 +1,27 @@
 import type { AstraConfig, CodeChunk } from './types.js';
 
-let extractor: any = null;
+interface FeatureExtractor {
+  (text: string, options?: { pooling?: string; normalize?: boolean }): Promise<{ data: Float32Array }>;
+}
+
+let extractor: FeatureExtractor | null = null;
+let loadedModelId: string | null = null;
 
 export async function initEmbedder(
   config: AstraConfig,
   onProgress?: (progress: any) => void,
 ): Promise<void> {
-  if (extractor) return;
+  if (extractor && loadedModelId === config.modelId) return;
   const { pipeline } = await import('@xenova/transformers');
   extractor = await pipeline('feature-extraction', config.modelId, {
     progress_callback: onProgress,
-  });
+  }) as unknown as FeatureExtractor;
+  loadedModelId = config.modelId;
 }
 
 export async function embedText(text: string, config: AstraConfig): Promise<number[]> {
   if (!extractor) await initEmbedder(config);
-  const result = await extractor(text, { pooling: 'mean', normalize: true });
+  const result = await extractor!(text, { pooling: 'mean', normalize: true });
   return Array.from(result.data as Float32Array);
 }
 
@@ -32,7 +38,7 @@ export async function embedBatch(
   for (let i = 0; i < texts.length; i += batchSize) {
     const batch = texts.slice(i, i + batchSize);
     const outputs = await Promise.all(
-      batch.map(t => extractor(t, { pooling: 'mean', normalize: true })),
+      batch.map(t => extractor!(t, { pooling: 'mean', normalize: true })),
     );
     for (const output of outputs) {
       results.push(Array.from(output.data as Float32Array));
