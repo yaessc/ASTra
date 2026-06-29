@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { existsSync, mkdirSync } from 'node:fs';
 import type { IndexedFile } from './types.js';
 
-const SCHEMA_VERSION = '3';
+const SCHEMA_VERSION = '4';
 
 let db: Database.Database | null = null;
 

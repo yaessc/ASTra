@@ -5,6 +5,7 @@ import { storeChunkQdrantId, removeIndexedChunks } from './cache.js';
 import { wrapQdrantError, QdrantConnectionError } from './errors.js';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { createHash } from 'node:crypto';
 
 function getCacheDir(): string {
   return join(tmpdir(), 'astra-cache');
@@ -72,7 +73,7 @@ export async function indexChunks(chunks: CodeChunk[], config: AstraConfig): Pro
   const embeddings = await embedBatch(texts, config);
 
   const points = chunks.map((chunk, i) => ({
-    id: chunkToId(chunk),
+    id: chunkIdToUUID(chunk.id),
     vector: embeddings[i],
     payload: chunkToPayload(chunk),
   }));
@@ -102,7 +103,7 @@ export async function indexChunks(chunks: CodeChunk[], config: AstraConfig): Pro
   }
 
   for (const chunk of chunks) {
-    storeChunkQdrantId(cacheDir, chunk.id, chunk.filePath, chunk.startLine, chunk.endLine, String(chunkToId(chunk)));
+    storeChunkQdrantId(cacheDir, chunk.id, chunk.filePath, chunk.startLine, chunk.endLine, chunkIdToUUID(chunk.id));
   }
 }
 
@@ -159,12 +160,11 @@ export async function resetCollection(config: AstraConfig): Promise<void> {
   }
 }
 
-function chunkToId(chunk: CodeChunk): number {
-  let hash = 5381;
-  const str = chunk.id;
-  for (let i = 0; i < str.length; i++) {
-    hash = ((hash << 5) + hash) + str.charCodeAt(i);
-    hash |= 0;
-  }
-  return Math.abs(hash);
+function chunkIdToUUID(chunkId: string): string {
+  const hex = createHash('sha256').update(chunkId).digest('hex');
+  return [
+    hex.slice(0, 8), hex.slice(8, 12),
+    hex.slice(12, 16), hex.slice(16, 20),
+    hex.slice(20, 32),
+  ].join('-');
 }
