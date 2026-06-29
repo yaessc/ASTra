@@ -5,17 +5,19 @@ import type { IndexedFile } from './types.js';
 
 const SCHEMA_VERSION = '4';
 
-let db: Database.Database | null = null;
+const databases = new Map<string, Database.Database>();
 
 function getDb(cacheDir: string): Database.Database {
-  if (db) return db;
+  const dbPath = join(cacheDir, 'cache.db');
+  const existing = databases.get(dbPath);
+  if (existing) return existing;
 
   if (!existsSync(cacheDir)) {
     mkdirSync(cacheDir, { recursive: true });
   }
 
-  db = new Database(join(cacheDir, 'cache.db'));
-  db.exec(`
+  const conn = new Database(dbPath);
+  conn.exec(`
     CREATE TABLE IF NOT EXISTS indexed_files (
       path TEXT PRIMARY KEY,
       mtime REAL NOT NULL,
@@ -34,13 +36,14 @@ function getDb(cacheDir: string): Database.Database {
     );
   `);
 
-  const row = db.prepare('SELECT value FROM metadata WHERE key = ?').get('schema_version') as any;
+  const row = conn.prepare('SELECT value FROM metadata WHERE key = ?').get('schema_version') as any;
   if (!row || row.value !== SCHEMA_VERSION) {
-    db.exec('DELETE FROM indexed_files; DELETE FROM indexed_chunks; DELETE FROM metadata;');
-    db.prepare('INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)').run('schema_version', SCHEMA_VERSION);
+    conn.exec('DELETE FROM indexed_files; DELETE FROM indexed_chunks; DELETE FROM metadata;');
+    conn.prepare('INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)').run('schema_version', SCHEMA_VERSION);
   }
 
-  return db;
+  databases.set(dbPath, conn);
+  return conn;
 }
 
 export function getIndexedFile(cacheDir: string, filePath: string): IndexedFile | null {
@@ -87,17 +90,19 @@ export function setMetadata(cacheDir: string, key: string, value: string): void 
 }
 
 export function clearCache(cacheDir: string): void {
-  if (db) {
-    db.close();
-    db = null;
+  const dbPath = join(cacheDir, 'cache.db');
+  const existing = databases.get(dbPath);
+  if (existing) {
+    existing.close();
+    databases.delete(dbPath);
   }
-  const d = getDb(cacheDir);
-  d.exec('DELETE FROM indexed_files; DELETE FROM indexed_chunks; DELETE FROM metadata;');
+  const conn = getDb(cacheDir);
+  conn.exec('DELETE FROM indexed_files; DELETE FROM indexed_chunks; DELETE FROM metadata;');
 }
 
 export function closeCache(): void {
-  if (db) {
-    db.close();
-    db = null;
+  for (const conn of databases.values()) {
+    conn.close();
   }
+  databases.clear();
 }
