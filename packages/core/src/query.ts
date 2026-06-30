@@ -1,20 +1,40 @@
-import type { AstraConfig, SearchResult } from './types.js';
+import type { AstraConfig, SearchResult, QdrantCodeChunkPayload, SupportedLanguage } from './types.js';
 import { embedText } from './embedder.js';
 import { createClient, safeQdrantCall } from './qdrant.js';
 
 export type SearchMode = 'vector' | 'keyword' | 'hybrid';
 
-function mapResult(r: any): SearchResult {
+function toQdrantPayload(payload: Record<string, unknown> | null | undefined): QdrantCodeChunkPayload {
+  return {
+    filePath: String(payload?.filePath ?? ''),
+    startLine: Number(payload?.startLine ?? 0),
+    endLine: Number(payload?.endLine ?? 0),
+    entityTypes: Array.isArray(payload?.entityTypes) ? payload.entityTypes as string[] : [],
+    entityNames: Array.isArray(payload?.entityNames) ? payload.entityNames as string[] : [],
+    firstEntitySignature: String(payload?.firstEntitySignature ?? ''),
+    entitiesJson: String(payload?.entitiesJson ?? '[]'),
+    code: String(payload?.code ?? ''),
+    language: String(payload?.language ?? 'typescript'),
+    chunkType: String(payload?.chunkType ?? 'body'),
+  };
+}
+
+function mapResult(r: {
+  id: string | number;
+  payload?: Record<string, unknown> | null;
+  score?: number;
+}): SearchResult {
+  const p = toQdrantPayload(r.payload);
   return {
     chunkId: String(r.id),
-    filePath: (r.payload as any)?.filePath || '',
-    startLine: (r.payload as any)?.startLine || 0,
-    endLine: (r.payload as any)?.endLine || 0,
+    filePath: p.filePath,
+    startLine: p.startLine,
+    endLine: p.endLine,
     score: r.score ?? 0,
-    code: (r.payload as any)?.code || '',
-    entities: JSON.parse((r.payload as any)?.entitiesJson || '[]'),
-    language: (r.payload as any)?.language || 'typescript',
-    chunkType: (r.payload as any)?.chunkType || 'body',
+    code: p.code,
+    entities: JSON.parse(p.entitiesJson),
+    language: p.language as SupportedLanguage,
+    chunkType: p.chunkType as 'metadata' | 'body',
   };
 }
 
@@ -72,21 +92,21 @@ async function keywordSearch(
   if (!points) return [];
 
   const scored = points
-    .map((p: any) => {
-      const payload = p.payload as any;
+    .map((p: { id: string | number; payload?: Record<string, unknown> | null }) => {
+      const pl = toQdrantPayload(p.payload);
       const matchCount = tokens.filter(t => {
-        const names: string[] = payload?.entityNames || [];
-        const sig: string = payload?.firstEntitySignature || '';
+        const names = pl.entityNames;
+        const sig = pl.firstEntitySignature;
         return names.includes(t) || sig.toLowerCase().includes(t);
       }).length;
 
       return { point: p, score: matchCount / tokens.length };
     })
     .filter(r => r.score > 0)
-    .sort((a: any, b: any) => b.score - a.score)
+    .sort((a, b) => b.score - a.score)
     .slice(0, limit);
 
-  return scored.map((s: any) => ({
+  return scored.map(s => ({
     ...mapResult(s.point),
     score: s.score,
   }));

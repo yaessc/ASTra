@@ -69,3 +69,16 @@ export interface ScannedFile {
 export interface ScanResult {
   files: ScannedFile[];
 }
+
+export interface QdrantCodeChunkPayload {
+  filePath: string;
+  startLine: number;
+  endLine: number;
+  entityTypes: string[];
+  entityNames: string[];
+  firstEntitySignature: string;
+  entitiesJson: string;
+  code: string;
+  language: string;
+  chunkType: string;
+}
