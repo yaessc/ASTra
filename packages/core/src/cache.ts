@@ -90,14 +90,9 @@ export function setMetadata(cacheDir: string, key: string, value: string): void 
 }
 
 export function clearCache(cacheDir: string): void {
-  const dbPath = join(cacheDir, 'cache.db');
-  const existing = databases.get(dbPath);
-  if (existing) {
-    existing.close();
-    databases.delete(dbPath);
-  }
-  const conn = getDb(cacheDir);
-  conn.exec('DELETE FROM indexed_files; DELETE FROM indexed_chunks; DELETE FROM metadata;');
+  const d = getDb(cacheDir);
+  d.exec('DELETE FROM indexed_files; DELETE FROM indexed_chunks; DELETE FROM metadata;');
+  d.prepare('INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)').run('schema_version', SCHEMA_VERSION);
 }
 
 export function getCacheDir(rootDir: string): string {
