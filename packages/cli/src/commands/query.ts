@@ -66,15 +66,35 @@ function displayResult(r: { filePath: string; startLine: number; endLine: number
 }
 
 async function openInEditor(filePath: string, line: number, rootDir: string): Promise<void> {
+  const fullPath = join(rootDir, filePath);
   try {
-    await execAsync(`code -g "${join(rootDir, filePath)}:${line}"`);
+    await execAsync(`code -g "${fullPath}:${line}"`);
+    return;
   } catch {
+    // VSCode not available — fall through
+  }
+
+  const editor = process.env.EDITOR;
+  if (editor) {
     try {
-      const editor = process.env.EDITOR || 'vim';
-      await execAsync(`${editor} "${join(rootDir, filePath)}" +${line}`);
+      await execAsync(`"${editor}" "${fullPath}" +${line}`);
+      return;
     } catch {
-      note(`Could not open editor. File: ${filePath}:${line}`, 'Open Failed');
+      note(`Could not open with EDITOR="${editor}". File: ${fullPath}:${line}`, 'Open Failed');
+      return;
     }
+  }
+
+  try {
+    if (process.platform === 'win32') {
+      await execAsync(`start "" "${fullPath}"`);
+    } else if (process.platform === 'darwin') {
+      await execAsync(`open "${fullPath}"`);
+    } else {
+      await execAsync(`xdg-open "${fullPath}"`);
+    }
+  } catch {
+    note(`Could not open editor. File: ${fullPath}:${line}`, 'Open Failed');
   }
 }
 
