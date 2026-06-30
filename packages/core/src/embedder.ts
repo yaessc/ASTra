@@ -52,6 +52,12 @@ export async function embedBatch(
   return results;
 }
 
+function truncateLines(text: string, maxChars: number): string {
+  if (text.length <= maxChars) return text;
+  const end = text.lastIndexOf('\n', maxChars);
+  return end > 0 ? text.slice(0, end) : text.slice(0, maxChars);
+}
+
 export function formatCodeForEmbedding(chunk: CodeChunk): string {
   if (chunk.chunkType === 'metadata') {
     return chunk.content;
@@ -64,8 +70,8 @@ export function formatCodeForEmbedding(chunk: CodeChunk): string {
   }
 
   if (parts.length > 0) {
-    return parts.join('\n') + '\n\n' + chunk.content.slice(0, 3000);
+    return parts.join('\n') + '\n\n' + truncateLines(chunk.content, 3000);
   }
 
-  return chunk.content.slice(0, 3000);
+  return truncateLines(chunk.content, 3000);
 }
