@@ -15,7 +15,7 @@ export {
 } from './indexer.js';
 export { searchCodebase, searchHybrid, type SearchMode } from './query.js';
 export {
-  clearCache, closeCache, setIndexedFile, getIndexedFile,
+  getCacheDir, clearCache, closeCache, setIndexedFile, getIndexedFile,
   removeIndexedFile, removeIndexedChunks, getAllIndexedFilePaths,
   getMetadata, setMetadata,
 } from './cache.js';

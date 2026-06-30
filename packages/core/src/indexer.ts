@@ -1,32 +1,10 @@
 import { QdrantClient } from '@qdrant/js-client-rest';
 import type { AstraConfig, CodeChunk, IndexStats } from './types.js';
 import { embedBatch, formatCodeForEmbedding } from './embedder.js';
-import { storeChunkQdrantId, removeIndexedChunks } from './cache.js';
-import { wrapQdrantError, QdrantConnectionError } from './errors.js';
-import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+import { getCacheDir, storeChunkQdrantId, removeIndexedChunks } from './cache.js';
+import { QdrantConnectionError } from './errors.js';
+import { createClient, safeQdrantCall } from './qdrant.js';
 import { createHash } from 'node:crypto';
-
-function getCacheDir(): string {
-  return join(tmpdir(), 'astra-cache');
-}
-
-function createClient(config: AstraConfig): QdrantClient {
-  try {
-    return new QdrantClient({ url: config.qdrantUrl });
-  } catch (err) {
-    throw wrapQdrantError(err, config.qdrantUrl);
-  }
-}
-
-async function safeQdrantCall<T>(fn: () => Promise<T>, config: AstraConfig): Promise<T> {
-  try {
-    return await fn();
-  } catch (err) {
-    if (err instanceof QdrantConnectionError) throw err;
-    throw wrapQdrantError(err, config.qdrantUrl);
-  }
-}
 
 function chunkToPayload(chunk: CodeChunk) {
   return {
@@ -65,9 +43,9 @@ export async function ensureCollection(config: AstraConfig): Promise<QdrantClien
   return client;
 }
 
-export async function indexChunks(chunks: CodeChunk[], config: AstraConfig): Promise<void> {
+export async function indexChunks(chunks: CodeChunk[], config: AstraConfig, rootDir: string): Promise<void> {
   const client = await ensureCollection(config);
-  const cacheDir = getCacheDir();
+  const cacheDir = getCacheDir(rootDir);
 
   const texts = chunks.map(c => formatCodeForEmbedding(c));
   const embeddings = await embedBatch(texts, config);

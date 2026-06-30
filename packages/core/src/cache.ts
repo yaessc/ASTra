@@ -100,6 +100,10 @@ export function clearCache(cacheDir: string): void {
   conn.exec('DELETE FROM indexed_files; DELETE FROM indexed_chunks; DELETE FROM metadata;');
 }
 
+export function getCacheDir(rootDir: string): string {
+  return join(rootDir, '.astra', 'cache');
+}
+
 export function closeCache(): void {
   for (const conn of databases.values()) {
     conn.close();

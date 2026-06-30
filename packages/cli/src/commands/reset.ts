@@ -1,20 +1,16 @@
 import {
-  loadConfig, resetCollection, clearCache,
+  loadConfig, resetCollection, clearCache, getCacheDir,
   ConfigValidationError, QdrantConnectionError,
 } from '@astra/core';
 import { intro, spinner, note, outro, confirm, isCancel } from '@clack/prompts';
 import pico from 'picocolors';
-import { tmpdir } from 'node:os';
-import { resolve, join } from 'node:path';
-
-function getCacheDir(): string {
-  return join(tmpdir(), 'astra-cache');
-}
+import { resolve } from 'node:path';
 
 export async function resetCommand(options?: { dir?: string }): Promise<void> {
+  const rootDir = resolve(options?.dir || '.');
   let config;
   try {
-    config = loadConfig(resolve(options?.dir || '.'));
+    config = loadConfig(rootDir);
   } catch (err) {
     if (err instanceof ConfigValidationError) {
       intro(pico.cyan('astra reset'));
@@ -43,7 +39,7 @@ export async function resetCommand(options?: { dir?: string }): Promise<void> {
 
   try {
     await resetCollection(config);
-    clearCache(getCacheDir());
+    clearCache(getCacheDir(rootDir));
     s.stop('Index reset complete');
     note('Run `astra index` to rebuild the index from scratch.', 'Next Step');
   } catch (err) {

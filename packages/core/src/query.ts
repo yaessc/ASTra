@@ -1,26 +1,8 @@
-import { QdrantClient } from '@qdrant/js-client-rest';
 import type { AstraConfig, SearchResult } from './types.js';
 import { embedText } from './embedder.js';
-import { wrapQdrantError, QdrantConnectionError } from './errors.js';
+import { createClient, safeQdrantCall } from './qdrant.js';
 
 export type SearchMode = 'vector' | 'keyword' | 'hybrid';
-
-function createClient(config: AstraConfig): QdrantClient {
-  try {
-    return new QdrantClient({ url: config.qdrantUrl });
-  } catch (err) {
-    throw wrapQdrantError(err, config.qdrantUrl);
-  }
-}
-
-async function safeQdrantCall<T>(fn: () => Promise<T>, config: AstraConfig): Promise<T> {
-  try {
-    return await fn();
-  } catch (err) {
-    if (err instanceof QdrantConnectionError) throw err;
-    throw wrapQdrantError(err, config.qdrantUrl);
-  }
-}
 
 function mapResult(r: any): SearchResult {
   return {

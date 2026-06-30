@@ -4,3 +4,4 @@ dist/
 *.tsbuildinfo
 .env
 .qdrant_storage/
+.astra/

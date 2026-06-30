@@ -4,18 +4,12 @@ import {
   chunkEntities, initEmbedder, indexChunks, setIndexedFile,
   getIndexedFile, getAllIndexedFilePaths,
   removeIndexedFile, removeIndexedChunks, deleteFileChunks,
-  ConfigValidationError, QdrantConnectionError,
+  getCacheDir, ConfigValidationError, QdrantConnectionError,
 } from '@astra/core';
 import { intro, spinner, note, outro } from '@clack/prompts';
 import pico from 'picocolors';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import cliProgress from 'cli-progress';
 import { ProgressBarManager } from '../utils/progress.js';
-
-function getCacheDir(): string {
-  return join(tmpdir(), 'astra-cache');
-}
 
 export async function indexCommand(dir: string = '.'): Promise<void> {
   const rootDir = resolve(dir || '.');
@@ -74,7 +68,7 @@ export async function indexCommand(dir: string = '.'): Promise<void> {
   const { files } = scanFiles(rootDir, config);
   s.stop(`Found ${files.length} files`);
 
-  const cacheDir = getCacheDir();
+  const cacheDir = getCacheDir(rootDir);
   const cachedPaths = getAllIndexedFilePaths(cacheDir);
   const scannedPaths = new Set(files.map(f => f.relativePath));
   const staleFiles = cachedPaths.filter(p => !scannedPaths.has(p));
@@ -155,7 +149,7 @@ export async function indexCommand(dir: string = '.'): Promise<void> {
     try {
       removeIndexedChunks(cacheDir, file.relativePath);
       await deleteFileChunks(file.relativePath, config);
-      await indexChunks(chunks, config);
+      await indexChunks(chunks, config, rootDir);
       setIndexedFile(cacheDir, {
         path: file.relativePath,
         mtime: file.mtime,
