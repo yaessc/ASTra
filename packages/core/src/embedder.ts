@@ -1,7 +1,7 @@
 import type { AstraConfig, CodeChunk } from './types.js';
 
 interface FeatureExtractor {
-  (text: string, options?: { pooling?: string; normalize?: boolean }): Promise<{ data: Float32Array }>;
+  (text: string | string[], options?: { pooling?: string; normalize?: boolean }): Promise<{ data: Float32Array; dims?: number[] }>;
 }
 
 let extractor: FeatureExtractor | null = null;
@@ -37,11 +37,12 @@ export async function embedBatch(
 
   for (let i = 0; i < texts.length; i += batchSize) {
     const batch = texts.slice(i, i + batchSize);
-    const outputs = await Promise.all(
-      batch.map(t => extractor!(t, { pooling: 'mean', normalize: true })),
-    );
-    for (const output of outputs) {
-      results.push(Array.from(output.data as Float32Array));
+    const output = await extractor!(batch, { pooling: 'mean', normalize: true });
+    const dims = output.dims;
+    const embeddingDim = dims ? dims[dims.length - 1] : 384;
+    for (let j = 0; j < batch.length; j++) {
+      const start = j * embeddingDim;
+      results.push(Array.from(output.data.slice(start, start + embeddingDim)));
     }
     if (onProgress) {
       onProgress(Math.min(i + batchSize, texts.length), texts.length);
