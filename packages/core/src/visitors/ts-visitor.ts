@@ -1,3 +1,4 @@
+import type { CodeEntity } from '../types.js';
 import type { EntityHandler } from './types.js';
 import { getNodeText, getNodeRange } from '../parser.js';
 import { findDocComment } from './doc-comment.js';
@@ -9,14 +10,14 @@ function firstLine(node: SyntaxNode, source: string): string {
   return getNodeText(node, source).split('\n')[0].trim();
 }
 
-function namedEntity(type: string): EntityHandler {
+function namedEntity(type: CodeEntity['type']): EntityHandler {
   return (node, source, filePath, language) => {
     const nameNode = node.childForFieldName('name');
     if (!nameNode) return null;
     const name = getNodeText(nameNode, source);
     const range = getNodeRange(node);
     return {
-      type: type as any,
+      type,
       name,
       filePath,
       startLine: range.startLine,
