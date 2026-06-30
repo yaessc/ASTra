@@ -14,16 +14,17 @@ export function chunkEntities(
   filePath: string,
   fullSource: string,
   language: SupportedLanguage,
-  _options: ChunkOptions,
+  options: ChunkOptions,
 ): CodeChunk[] {
   if (entities.length === 0) {
     const lines = fullSource.split('\n');
+    const endLine = Math.min(lines.length, options.maxChunkSize);
     const chunk: CodeChunk = {
-      id: `${filePath}:0-0:body`,
+      id: `${filePath}:1-${endLine}:body`,
       filePath,
       startLine: 1,
-      endLine: lines.length,
-      content: fullSource.slice(0, 2000),
+      endLine,
+      content: lines.slice(0, endLine).join('\n'),
       entities: [],
       language,
       chunkType: 'body',
