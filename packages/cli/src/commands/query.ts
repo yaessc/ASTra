@@ -171,7 +171,7 @@ async function handleReplCommand(cmd: string, currentLimit: number, currentMode:
     case cmd === ':exit':
       return -1;
 
-    case cmd.startsWith(':limit '):
+    case cmd.startsWith(':limit '): {
       const n = parseInt(cmd.slice(7).trim(), 10);
       if (isNaN(n) || n < 1) {
         console.log(`  ${pico.yellow('Usage:')} :limit <number>`);
@@ -179,8 +179,9 @@ async function handleReplCommand(cmd: string, currentLimit: number, currentMode:
       }
       console.log(`  ${pico.green(`Limit set to ${n}`)}`);
       return { limit: n };
+    }
 
-    case cmd.startsWith(':mode '):
+    case cmd.startsWith(':mode '): {
       const m = cmd.slice(6).trim().toLowerCase();
       if (m !== 'vector' && m !== 'keyword' && m !== 'hybrid') {
         console.log(`  ${pico.yellow('Usage:')} :mode vector | keyword | hybrid`);
@@ -188,6 +189,7 @@ async function handleReplCommand(cmd: string, currentLimit: number, currentMode:
       }
       console.log(`  ${pico.green(`Mode set to ${m}`)}`);
       return { mode: m as SearchMode };
+    }
 
     default:
       console.log(`  ${pico.yellow('Unknown command:')} ${cmd}. Type ${pico.cyan(':help')} for available commands.`);

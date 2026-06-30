@@ -44,7 +44,7 @@ async function keywordSearch(
 ): Promise<SearchResult[]> {
   const tokens = query
     .toLowerCase()
-    .split(/[\s,.;:!?()\[\]{}"'`<>/\\|=+\-_*&^%$#@~]+/)
+    .split(/[\s,.;:!?()[\]{}"'`<>/\\|=+\-_*&^%$#@~]+/)
     .filter(t => t.length > 1);
 
   if (tokens.length === 0) return [];

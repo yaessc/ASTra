@@ -57,7 +57,7 @@ export const tsHandlers: Record<string, EntityHandler> = {
   enum_declaration: namedEntity('enum'),
 
   decorator(node, source, filePath, language) {
-    const name = getNodeText(node, source).split(/[\(\s]/)[0];
+    const name = getNodeText(node, source).split(/[(\s]/)[0];
     const range = getNodeRange(node);
     return {
       type: 'decorator',

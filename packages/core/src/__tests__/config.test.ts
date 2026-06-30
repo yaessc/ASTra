@@ -14,8 +14,8 @@ describe('ConfigValidationError', () => {
   });
 
   afterEach(() => {
-    try { unlinkSync(configPath); } catch {}
-    try { rmdirSync(dir); } catch {}
+    try { unlinkSync(configPath); } catch { /* cleanup: ignore if already absent */ }
+    try { rmdirSync(dir); } catch { /* cleanup: ignore if not empty */ }
   });
 
   it('throws ConfigValidationError when maxChunkSize is a string', () => {

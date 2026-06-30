@@ -20,7 +20,7 @@ function findGitignore(dir: string): string[] {
       const gi = join(current, '.gitignore');
       const content = readFileSync(gi, 'utf-8');
       patterns.push(content);
-    } catch {}
+    } catch { /* not a git repo or no .gitignore */ }
     const parent = resolve(current, '..');
     if (parent === current) break;
     current = parent;
