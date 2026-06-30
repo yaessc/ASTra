@@ -72,13 +72,13 @@ async function openInEditor(filePath: string, line: number, rootDir: string): Pr
     try {
       const editor = process.env.EDITOR || 'vim';
       await execAsync(`${editor} "${join(rootDir, filePath)}" +${line}`);
-    } catch (e) {
+    } catch {
       note(`Could not open editor. File: ${filePath}:${line}`, 'Open Failed');
     }
   }
 }
 
-async function runSearch(query: string, limit: number, mode: SearchMode, config: AstraConfig, rootDir: string): Promise<any[]> {
+async function runSearch(query: string, limit: number, mode: SearchMode, config: AstraConfig): Promise<any[]> {
   const s = spinner();
 
   s.start('Searching...');
@@ -136,7 +136,7 @@ async function postSearchMenu(results: any[], rootDir: string): Promise<'search'
   return 'search';
 }
 
-async function handleReplCommand(cmd: string, currentLimit: number, currentMode: SearchMode): Promise<{ limit?: number; mode?: SearchMode } | -1 | null> {
+async function handleReplCommand(cmd: string): Promise<{ limit?: number; mode?: SearchMode } | -1 | null> {
   switch (true) {
     case cmd === ':help':
       console.log(`
@@ -268,7 +268,7 @@ export async function queryCommand(query?: string, options?: { limit?: string; m
 
   if (query) {
     queryHistory.push(query);
-    const results = await runSearch(query, limit, mode, config, rootDir);
+    const results = await runSearch(query, limit, mode, config);
     if (results.length > 0) {
       await postSearchMenu(results, rootDir);
     }
@@ -294,7 +294,7 @@ export async function queryCommand(query?: string, options?: { limit?: string; m
     const trimmed = q.trim();
 
     if (trimmed.startsWith(':')) {
-      const result = await handleReplCommand(trimmed, limit, mode);
+      const result = await handleReplCommand(trimmed);
       if (result === -1) {
         outro('Goodbye!');
         break;
@@ -308,7 +308,7 @@ export async function queryCommand(query?: string, options?: { limit?: string; m
 
     console.log(`  ${pico.dim(pico.cyan('›'))} ${pico.dim(trimmed)}`);
     queryHistory.push(trimmed);
-    const results = await runSearch(trimmed, limit, mode, config, rootDir);
+    const results = await runSearch(trimmed, limit, mode, config);
     if (results.length > 0) {
       const next = await postSearchMenu(results, rootDir);
       if (next === 'exit') {
