@@ -15,7 +15,10 @@ export function findDocComment(node: SyntaxNode, source: string): string {
   if (parent) {
     for (let i = 0; i < parent.namedChildCount; i++) {
       const child = parent.namedChild(i);
-      if (child && child.endIndex === node.startIndex && (child.type === 'comment' || child.type === 'block_comment')) {
+      if (child && (child.type === 'comment' || child.type === 'block_comment')) {
+        if (child.endIndex > node.startIndex) continue;
+        const gap = source.slice(child.endIndex, node.startIndex);
+        if (!/^\s*$/.test(gap)) continue;
         const text = getNodeText(child, source);
         if (text.startsWith('/**') || text.startsWith('///')) {
           return text;
