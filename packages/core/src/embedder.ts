@@ -12,7 +12,7 @@ export async function initEmbedder(
   onProgress?: (progress: any) => void,
 ): Promise<void> {
   if (extractor && loadedModelId === config.modelId) return;
-  const { pipeline } = await import('@xenova/transformers');
+  const { pipeline } = await import('@huggingface/transformers');
   extractor = await pipeline('feature-extraction', config.modelId, {
     progress_callback: onProgress,
   }) as unknown as FeatureExtractor;
