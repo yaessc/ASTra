@@ -12,7 +12,7 @@ function mapResult(r: any): SearchResult {
     endLine: (r.payload as any)?.endLine || 0,
     score: r.score ?? 0,
     code: (r.payload as any)?.code || '',
-    entities: [],
+    entities: JSON.parse((r.payload as any)?.entitiesJson || '[]'),
     language: (r.payload as any)?.language || 'typescript',
     chunkType: (r.payload as any)?.chunkType || 'body',
   };
