@@ -1,6 +1,4 @@
 import Parser from 'web-tree-sitter';
-import { resolve, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import type { SupportedLanguage } from './types.js';
 
