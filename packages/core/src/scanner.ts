@@ -2,50 +2,15 @@ import { readFileSync, statSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { globSync } from 'glob';
 import { createHash } from 'node:crypto';
+import { createRequire } from 'node:module';
 import type { AstraConfig, ScannedFile, ScanResult, SupportedLanguage } from './types.js';
 
-class GitIgnoreMatcher {
-  private patterns: string[] = [];
-
-  add(patterns: string[]): void {
-    for (const p of patterns) {
-      this.patterns.push(...p.split('\n').filter(l => {
-        const trimmed = l.trim();
-        return trimmed.length > 0 && !trimmed.startsWith('#');
-      }));
-    }
-  }
-
-  ignores(path: string): boolean {
-    const normalized = path.replace(/\\/g, '/');
-    for (const p of this.patterns) {
-      if (this.matchPattern(normalized, p.trim())) return true;
-    }
-    return false;
-  }
-
-  private matchPattern(path: string, pattern: string): boolean {
-    if (pattern.startsWith('/')) {
-      pattern = pattern.slice(1);
-      if (path === pattern || path.startsWith(pattern + '/')) return true;
-    } else if (pattern.endsWith('/')) {
-      if (path.includes(pattern) || path.startsWith(pattern) || path.includes('/' + pattern)) return true;
-    } else if (pattern.includes('*')) {
-      const regexStr = '^' + pattern.replace(/\./g, '\\.').replace(/\*\*/g, '.*').replace(/\*/g, '[^/]*') + '$';
-      try {
-        return new RegExp(regexStr).test(path);
-      } catch { return false; }
-    } else if (pattern.startsWith('*.')) {
-      const ext = pattern.slice(1);
-      if (path.endsWith(ext)) return true;
-    } else {
-      if (path === pattern) return true;
-      if (path.includes('/' + pattern)) return true;
-      if (path.startsWith(pattern + '/')) return true;
-    }
-    return false;
-  }
-}
+const ignore = createRequire(import.meta.url)('ignore') as {
+  (options?: { ignorecase?: boolean }): {
+    add(patterns: string | readonly string[]): void;
+    ignores(pathname: string): boolean;
+  };
+};
 
 function findGitignore(dir: string): string[] {
   const patterns: string[] = [];
@@ -73,11 +38,11 @@ function detectLanguage(filePath: string): SupportedLanguage | null {
 }
 
 export function scanFiles(rootDir: string, config: AstraConfig): ScanResult {
-  const ig = new GitIgnoreMatcher();
+  const ig = ignore();
 
   const gitignorePatterns = findGitignore(rootDir);
   for (const p of gitignorePatterns) {
-    ig.add([p]);
+    ig.add(p);
   }
   ig.add(['node_modules', 'dist', 'build', '.git']);
 
