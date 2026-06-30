@@ -202,7 +202,7 @@ export async function queryCommand(query?: string, options?: { limit?: string; m
     config = loadConfig(rootDir);
   } catch (err) {
     if (err instanceof ConfigValidationError) {
-intro(pico.cyan('astra query'));
+      intro(pico.cyan('astra query'));
       for (const issue of err.issues) {
         note(issue.message, 'Config Error');
       }
