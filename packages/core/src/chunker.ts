@@ -47,7 +47,7 @@ export function chunkEntities(
 
     if (metaContent.length >= MIN_META_LENGTH) {
       chunks.push({
-        id: `${filePath}:${entity.startLine}-${entity.endLine}:meta`,
+        id: `${filePath}:${entity.startLine}-${entity.endLine}:${entity.name}:meta`,
         filePath,
         startLine: entity.startLine,
         endLine: entity.endLine,
@@ -63,7 +63,7 @@ export function chunkEntities(
 
     if (totalLines <= MAX_BODY_LINES && entity.code.length <= MAX_BODY_CHARS) {
       chunks.push({
-        id: `${filePath}:${entity.startLine}-${entity.endLine}:body`,
+        id: `${filePath}:${entity.startLine}-${entity.endLine}:${entity.name}:body`,
         filePath,
         startLine: entity.startLine,
         endLine: entity.endLine,
@@ -81,7 +81,7 @@ export function chunkEntities(
         const seqIndex = Math.floor(offset / LINES_PER_BODY_CHUNK);
 
         chunks.push({
-          id: `${filePath}:${entity.startLine}-${entity.endLine}:body:${seqIndex}`,
+          id: `${filePath}:${entity.startLine}-${entity.endLine}:${entity.name}:body:${seqIndex}`,
           filePath,
           startLine: chunkStartLine,
           endLine: chunkEndLine,
@@ -144,10 +144,12 @@ export function computeChunkId(
   filePath: string,
   startLine: number,
   endLine: number,
+  name?: string,
   chunkType?: 'metadata' | 'body',
   seqIndex?: number,
 ): string {
   let id = `${filePath}:${startLine}-${endLine}`;
+  if (name) id += `:${name}`;
   if (chunkType === 'metadata') {
     id += ':meta';
   } else if (chunkType === 'body') {
