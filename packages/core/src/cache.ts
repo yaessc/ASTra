@@ -75,11 +75,6 @@ export function removeIndexedChunks(cacheDir: string, filePath: string): void {
   d.prepare('DELETE FROM indexed_chunks WHERE file_path = ?').run(filePath);
 }
 
-export function storeChunkQdrantId(cacheDir: string, chunkId: string, filePath: string, startLine: number, endLine: number, qdrantId: string): void {
-  const d = getDb(cacheDir);
-  d.prepare('INSERT OR REPLACE INTO indexed_chunks (id, file_path, start_line, end_line, qdrant_id) VALUES (?, ?, ?, ?, ?)').run(chunkId, filePath, startLine, endLine, qdrantId);
-}
-
 export function storeChunkQdrantIds(
   cacheDir: string,
   mappings: { chunkId: string; filePath: string; startLine: number; endLine: number; qdrantId: string }[],
