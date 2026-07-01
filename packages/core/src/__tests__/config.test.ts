@@ -37,4 +37,9 @@ describe('ConfigValidationError', () => {
     writeFileSync(configPath, '{ invalid json }');
     expect(() => loadConfig(dir)).toThrow(ConfigValidationError);
   });
+
+  it('rejects chunkOverlap >= linesPerBodyChunk', () => {
+    writeFileSync(configPath, JSON.stringify({ chunkOverlap: 100, linesPerBodyChunk: 50 }));
+    expect(() => loadConfig(dir)).toThrowError('Config validation failed');
+  });
 });

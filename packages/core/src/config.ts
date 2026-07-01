@@ -19,6 +19,14 @@ export const AstraConfigSchema = z.object({
   maxBodyChars: z.number().int().positive('Must be a positive number').default(4000),
   linesPerBodyChunk: z.number().int().positive('Must be a positive number').default(100),
   chunkOverlap: z.number().int().min(0).default(25),
+}).superRefine((data, ctx) => {
+  if (data.chunkOverlap >= data.linesPerBodyChunk) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['chunkOverlap'],
+      message: `chunkOverlap (${data.chunkOverlap}) must be less than linesPerBodyChunk (${data.linesPerBodyChunk})`,
+    });
+  }
 });
 
 export function loadConfig(dir?: string): AstraConfig {
