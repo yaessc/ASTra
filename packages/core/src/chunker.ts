@@ -9,6 +9,12 @@ const MAX_BODY_CHARS = 4000;
 const LINES_PER_BODY_CHUNK = 100;
 const MIN_META_LENGTH = 10;
 
+function truncateAtLineBoundary(text: string, maxChars: number): string {
+  if (text.length <= maxChars) return text;
+  const end = text.lastIndexOf('\n', maxChars);
+  return end > 0 ? text.slice(0, end) : text.slice(0, maxChars);
+}
+
 export function chunkEntities(
   entities: CodeEntity[],
   filePath: string,
@@ -85,7 +91,7 @@ export function chunkEntities(
           filePath,
           startLine: chunkStartLine,
           endLine: chunkEndLine,
-          content: chunkLines.join('\n').slice(0, MAX_BODY_CHARS),
+          content: truncateAtLineBoundary(chunkLines.join('\n'), MAX_BODY_CHARS),
           entities: [entity],
           language,
           chunkType: 'body',
