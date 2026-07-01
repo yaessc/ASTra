@@ -53,20 +53,6 @@ export async function ensureCollection(config: AstraConfig): Promise<QdrantClien
     }
   }, config);
 
-  await safeQdrantCall(async () => {
-    await client.createPayloadIndex(config.collectionName, {
-      field_name: 'firstEntitySignature',
-      field_schema: 'text',
-    });
-  }, config).catch(() => {});
-
-  await safeQdrantCall(async () => {
-    await client.createPayloadIndex(config.collectionName, {
-      field_name: 'code',
-      field_schema: { type: 'text', tokenizer: 'word' },
-    });
-  }, config).catch(() => {});
-
   return client;
 }
 
