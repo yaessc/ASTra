@@ -94,6 +94,49 @@ export function chunkEntities(
     }
   }
 
+  const covered = new Set<number>();
+  for (const entity of entities) {
+    for (let l = entity.startLine; l <= entity.endLine; l++) {
+      covered.add(l);
+    }
+  }
+
+  const lineList = fullSource.split('\n');
+  const rawRanges: { start: number; end: number }[] = [];
+  let rangeStart: number | null = null;
+  for (let l = 1; l <= lineList.length; l++) {
+    if (!covered.has(l)) {
+      if (rangeStart === null) rangeStart = l;
+    } else {
+      if (rangeStart !== null) {
+        rawRanges.push({ start: rangeStart, end: l - 1 });
+        rangeStart = null;
+      }
+    }
+  }
+  if (rangeStart !== null) {
+    rawRanges.push({ start: rangeStart, end: lineList.length });
+  }
+
+  const chunkSize = options.maxChunkSize;
+  for (const { start, end } of rawRanges) {
+    for (let i = start; i <= end; i += chunkSize) {
+      const chunkEnd = Math.min(i + chunkSize - 1, end);
+      const content = lineList.slice(i - 1, chunkEnd).join('\n');
+      if (content.trim().length === 0) continue;
+      chunks.push({
+        id: `${filePath}:${i}-${chunkEnd}:body`,
+        filePath,
+        startLine: i,
+        endLine: chunkEnd,
+        content,
+        entities: [],
+        language,
+        chunkType: 'body',
+      });
+    }
+  }
+
   return chunks;
 }
 

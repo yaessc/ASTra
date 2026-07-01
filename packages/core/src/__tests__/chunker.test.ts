@@ -29,6 +29,35 @@ describe('chunkEntities — metadata guard', () => {
     expect(chunks.every(c => c.content.length > 0)).toBe(true);
   });
 
+  it('chunks uncovered lines between entities and skips blank-only ranges', () => {
+    const source = [
+      'import { x } from "./x";',
+      'const app = createApp();',
+      '',
+      'app.use(middleware);',
+      'app.use(routes);',
+      '',
+      'const PORT = 3000;',
+      'app.listen(PORT);',
+    ].join('\n');
+
+    const chunks = chunkEntities(
+      [
+        { docComment: '', signature: '', startLine: 1, endLine: 1, code: 'import { x } from "./x";', filePath: 'server.ts', language: 'typescript', type: 'variable', name: 'x' },
+        { docComment: '', signature: '', startLine: 2, endLine: 2, code: 'const app = createApp();', filePath: 'server.ts', language: 'typescript', type: 'variable', name: 'app' },
+        { docComment: '', signature: '', startLine: 7, endLine: 7, code: 'const PORT = 3000;', filePath: 'server.ts', language: 'typescript', type: 'variable', name: 'PORT' },
+      ] as any,
+      'server.ts', source, 'typescript', { maxChunkSize: 50 },
+    );
+
+    const uncovered = chunks.filter(c => c.entities.length === 0);
+    expect(uncovered.length).toBe(2);
+    expect(uncovered[0].startLine).toBe(3);
+    expect(uncovered[0].content).toContain('app.use(middleware)');
+    expect(uncovered[1].startLine).toBe(8);
+    expect(uncovered[1].content).toContain('app.listen(PORT)');
+  });
+
   it('produces both chunks when docComment is valid', () => {
     const chunks = chunkEntities(
       [{
