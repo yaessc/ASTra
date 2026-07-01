@@ -46,15 +46,16 @@ export async function searchCodebase(
   const client = createClient(config);
   const queryVector = await embedText(query, config);
 
-  const results = await safeQdrantCall(async () => {
-    return await client.search(config.collectionName, {
-      vector: queryVector,
+  const response = await safeQdrantCall(async () => {
+    return await client.query(config.collectionName, {
+      query: queryVector,
+      using: "dense",
       limit,
       with_payload: true,
     });
   }, config);
 
-  return results.map(mapResult);
+  return response.points.map(mapResult);
 }
 
 async function keywordSearch(
@@ -67,6 +68,7 @@ async function keywordSearch(
   const response = await safeQdrantCall(async () => {
     return await client.query(config.collectionName, {
       query: { text: query, model: 'qdrant/bm25' },
+      using: "bm25",
       limit,
       with_payload: true,
     });

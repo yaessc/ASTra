@@ -29,8 +29,17 @@ export async function ensureCollection(config: AstraConfig): Promise<QdrantClien
     const exists = collections.collections.some(c => c.name === config.collectionName);
     if (!exists) {
       await client.createCollection(config.collectionName, {
-        vectors: { size: 384, distance: 'Cosine' },
+        vectors: { "dense": { size: 384, distance: 'Cosine' } },
+        sparse_vectors: { "bm25": { modifier: "idf" } },
       });
+    } else {
+      const info = await client.getCollection(config.collectionName);
+      if (!info.config?.params?.sparse_vectors?.["bm25"]) {
+        throw new Error(
+          `Collection "${config.collectionName}" was created with an older schema. ` +
+          `Run "astra reset && astra index" to migrate to the new schema.`
+        );
+      }
     }
   }, config);
 
@@ -68,7 +77,11 @@ export async function indexChunks(chunks: CodeChunk[], config: AstraConfig, root
     removeIndexedChunks(cacheDir, fp);
   }
 
-  let upsertBatch: { id: string; vector: number[]; payload: Record<string, unknown> }[] = [];
+  let upsertBatch: {
+    id: string;
+    vector: { "dense": number[]; "bm25": { text: string; model: string } };
+    payload: Record<string, unknown>;
+  }[] = [];
   const qdrantMappings: { chunk: CodeChunk; qdrantId: string }[] = [];
 
   for await (const { chunk, embedding } of embedBatch(chunks, config)) {
@@ -77,7 +90,10 @@ export async function indexChunks(chunks: CodeChunk[], config: AstraConfig, root
 
     upsertBatch.push({
       id: qdrantId,
-      vector: embedding,
+      vector: {
+        "dense": embedding,
+        "bm25": { text: chunk.content, model: "qdrant/bm25" },
+      },
       payload: chunkToPayload(chunk),
     });
 
@@ -118,7 +134,10 @@ export async function deleteFileChunks(filePath: string, config: AstraConfig): P
       });
     }, config);
   } catch (err) {
-    if (err instanceof QdrantConnectionError) throw err;
+    if (err instanceof QdrantConnectionError) {
+      if (err.message.toLowerCase().includes('not found')) return;
+      throw err;
+    }
   }
 }
 
