@@ -26,7 +26,11 @@ export class ConfigValidationError extends Error {
 
 export function isQdrantError(err: unknown): err is NodeJS.ErrnoException {
   if (!(err instanceof Error)) return false;
-  const code = (err as NodeJS.ErrnoException).code;
+
+  const cause = err.cause;
+  const code = (err as NodeJS.ErrnoException).code
+    ?? (cause && typeof cause === 'object' && 'code' in cause ? (cause as any).code : undefined);
+
   return code === 'ECONNREFUSED' || code === 'ECONNRESET' || code === 'ETIMEDOUT' || code === 'EAI_AGAIN';
 }
 
