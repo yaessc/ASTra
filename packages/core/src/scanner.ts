@@ -38,6 +38,7 @@ function findGitignore(dir: string): { dir: string; content: string }[] {
 
 function detectLanguage(filePath: string): SupportedLanguage | null {
   const ext = filePath.toLowerCase();
+  if (ext.endsWith('.d.ts')) return null;
   if (ext.endsWith('.tsx')) return 'tsx';
   if (ext.endsWith('.ts')) return 'typescript';
   if (ext.endsWith('.jsx')) return 'javascript';
