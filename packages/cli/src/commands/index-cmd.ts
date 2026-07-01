@@ -147,8 +147,6 @@ export async function indexCommand(dir: string = '.'): Promise<void> {
 
   for (const { file, chunks } of allChunks) {
     try {
-      removeIndexedChunks(cacheDir, file.relativePath);
-      await deleteFileChunks(file.relativePath, config);
       await indexChunks(chunks, config, rootDir);
       setIndexedFile(cacheDir, {
         path: file.relativePath,
