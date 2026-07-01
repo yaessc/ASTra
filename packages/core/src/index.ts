@@ -8,7 +8,7 @@ export { initLanguages } from './languages.js';
 export { parseFile } from './parser.js';
 export { extractEntities } from './entities.js';
 export { chunkEntities } from './chunker.js';
-export { initEmbedder, embedText, embedBatch } from './embedder.js';
+export { initEmbedder, embedText, embedBatch, getEmbeddingDimension } from './embedder.js';
 export {
   ensureCollection, indexChunks, deleteFileChunks,
   getIndexStats, resetCollection,

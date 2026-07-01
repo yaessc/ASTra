@@ -1,6 +1,6 @@
 import { QdrantClient } from '@qdrant/js-client-rest';
 import type { AstraConfig, CodeChunk, IndexStats } from './types.js';
-import { embedBatch } from './embedder.js';
+import { embedBatch, getEmbeddingDimension } from './embedder.js';
 import { getCacheDir, storeChunkQdrantIds, removeIndexedChunks, getAllIndexedFilePaths, getLastIndexedMtime } from './cache.js';
 import { QdrantConnectionError } from './errors.js';
 import { createClient, safeQdrantCall } from './qdrant.js';
@@ -23,13 +23,14 @@ function chunkToPayload(chunk: CodeChunk) {
 
 export async function ensureCollection(config: AstraConfig): Promise<QdrantClient> {
   const client = createClient(config);
+  const vectorSize = await getEmbeddingDimension(config);
 
   await safeQdrantCall(async () => {
     const collections = await client.getCollections();
     const exists = collections.collections.some(c => c.name === config.collectionName);
     if (!exists) {
       await client.createCollection(config.collectionName, {
-        vectors: { "dense": { size: 384, distance: 'Cosine' } },
+        vectors: { "dense": { size: vectorSize, distance: 'Cosine' } },
         sparse_vectors: { "bm25": { modifier: "idf" } },
       });
     } else {
@@ -38,6 +39,15 @@ export async function ensureCollection(config: AstraConfig): Promise<QdrantClien
         throw new Error(
           `Collection "${config.collectionName}" was created with an older schema. ` +
           `Run "astra reset && astra index" to migrate to the new schema.`
+        );
+      }
+      const vectors = info.config?.params?.vectors;
+      const existingSize = vectors && 'dense' in vectors ? (vectors as Record<string, { size: number }>).dense.size : undefined;
+      if (existingSize && existingSize !== vectorSize) {
+        throw new Error(
+          `Collection "${config.collectionName}" was created with vector size ${existingSize} ` +
+          `but model "${config.modelId}" outputs ${vectorSize} dimensions. ` +
+          `Run "astra reset && astra index" to rebuild.`
         );
       }
     }

@@ -19,6 +19,13 @@ export async function initEmbedder(
   loadedModelId = config.modelId;
 }
 
+export async function getEmbeddingDimension(config: AstraConfig): Promise<number> {
+  if (!extractor) await initEmbedder(config);
+  const result = await extractor!('test', { pooling: 'mean', normalize: true });
+  const dims = result.dims;
+  return dims ? dims[dims.length - 1] : 384;
+}
+
 export async function embedText(text: string, config: AstraConfig): Promise<number[]> {
   if (!extractor) await initEmbedder(config);
   const result = await extractor!(text, { pooling: 'mean', normalize: true });
