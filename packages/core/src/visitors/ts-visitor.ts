@@ -55,7 +55,7 @@ function isTopLevel(node: SyntaxNode): boolean {
       current.type === 'try_statement' ||
       current.type === 'catch_clause' ||
       current.type === 'with_statement' ||
-      current.type === 'class_body'
+      current.type === 'static_block'
     ) return false;
     current = current.parent;
   }
@@ -107,6 +107,7 @@ function namedEntity(type: CodeEntity['type']): EntityHandler {
   return (node, source, filePath, language) => {
     const nameNode = node.childForFieldName('name');
     if (!nameNode) return null;
+    if (!isTopLevel(node)) return null;
     const name = getNodeText(nameNode, source);
     const range = getNodeRange(node);
     return {
@@ -131,6 +132,7 @@ export const tsHandlers: Record<string, EntityHandler> = {
     if (!nameNode) return null;
     const name = getNodeText(nameNode, source);
     if (name === 'constructor') return null;
+    if (!isTopLevel(node)) return null;
     const range = getNodeRange(node);
     return {
       type: 'method',
