@@ -7,6 +7,9 @@ export interface AstraConfig {
   collectionName: string;
   modelId: string;
   maxChunkSize: number;
+  maxBodyLines: number;
+  maxBodyChars: number;
+  linesPerBodyChunk: number;
 }
 
 export interface CodeEntity {

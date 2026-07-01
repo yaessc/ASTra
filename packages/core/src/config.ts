@@ -10,11 +10,14 @@ const AstraConfigSchema = z.object({
   qdrantUrl: z.string().min(1, 'Must be a URL like http://localhost:6333').default('http://localhost:6333'),
   collectionName: z.string().min(1, 'Collection name cannot be empty').default('code_chunks'),
   modelId: z.string().min(1, 'Model ID cannot be empty').default('Xenova/all-MiniLM-L6-v2'),
-  // maxChunkSize is a legacy fallback for files where no AST entities are found.
-  // With the dual-chunk strategy, each entity produces its own body chunk(s)
-  // split at 150 lines / 4000 chars. This field only applies to the
-  // zero-entities fallback path and may be removed in a future version.
+  // maxChunkSize controls the line window for files with zero AST entities
+  // and for uncovered (inter-entity) lines. For files with entities, the
+  // entity-body chunking is governed by maxBodyLines, maxBodyChars, and
+  // linesPerBodyChunk below.
   maxChunkSize: z.number().int().positive('Must be a positive number').default(50),
+  maxBodyLines: z.number().int().positive('Must be a positive number').default(150),
+  maxBodyChars: z.number().int().positive('Must be a positive number').default(4000),
+  linesPerBodyChunk: z.number().int().positive('Must be a positive number').default(100),
 });
 
 export function loadConfig(dir?: string): AstraConfig {

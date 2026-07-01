@@ -127,6 +127,9 @@ export async function indexCommand(dir: string = '.'): Promise<void> {
         const entities = extractEntities(file.content, file.relativePath, file.language);
         const chunks = chunkEntities(entities, file.relativePath, file.content, file.language, {
           maxChunkSize: config.maxChunkSize,
+          maxBodyLines: config.maxBodyLines,
+          maxBodyChars: config.maxBodyChars,
+          linesPerBodyChunk: config.linesPerBodyChunk,
         });
         allChunks.push({ file, chunks });
       } catch (err) {

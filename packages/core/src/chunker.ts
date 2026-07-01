@@ -2,11 +2,11 @@ import type { CodeEntity, CodeChunk, SupportedLanguage } from './types.js';
 
 export interface ChunkOptions {
   maxChunkSize: number;
+  maxBodyLines: number;
+  maxBodyChars: number;
+  linesPerBodyChunk: number;
 }
 
-const MAX_BODY_LINES = 150;
-const MAX_BODY_CHARS = 4000;
-const LINES_PER_BODY_CHUNK = 100;
 const MIN_META_LENGTH = 10;
 
 function truncateAtLineBoundary(text: string, maxChars: number): string {
@@ -69,7 +69,7 @@ export function chunkEntities(
     const bodyLines = entity.code.split('\n');
     const totalLines = bodyLines.length;
 
-    if (totalLines <= MAX_BODY_LINES && entity.code.length <= MAX_BODY_CHARS) {
+    if (totalLines <= options.maxBodyLines && entity.code.length <= options.maxBodyChars) {
       chunks.push({
         id: `${filePath}:${entity.startLine}-${entity.endLine}:${entity.name}:body`,
         filePath,
@@ -81,19 +81,19 @@ export function chunkEntities(
         chunkType: 'body',
       });
     } else {
-      for (let offset = 0; offset < totalLines; offset += LINES_PER_BODY_CHUNK) {
-        const chunkEnd = Math.min(offset + LINES_PER_BODY_CHUNK, totalLines);
+      for (let offset = 0; offset < totalLines; offset += options.linesPerBodyChunk) {
+        const chunkEnd = Math.min(offset + options.linesPerBodyChunk, totalLines);
         const chunkLines = bodyLines.slice(offset, chunkEnd);
         const chunkStartLine = entity.startLine + offset;
-        const chunkEndLine = Math.min(chunkStartLine + LINES_PER_BODY_CHUNK - 1, entity.endLine);
-        const seqIndex = Math.floor(offset / LINES_PER_BODY_CHUNK);
+        const chunkEndLine = Math.min(chunkStartLine + options.linesPerBodyChunk - 1, entity.endLine);
+        const seqIndex = Math.floor(offset / options.linesPerBodyChunk);
 
         chunks.push({
           id: `${filePath}:${entity.startLine}-${entity.endLine}:${entity.name}:body:${seqIndex}`,
           filePath,
           startLine: chunkStartLine,
           endLine: chunkEndLine,
-          content: truncateAtLineBoundary(chunkLines.join('\n'), MAX_BODY_CHARS),
+          content: truncateAtLineBoundary(chunkLines.join('\n'), options.maxBodyChars),
           entities: [entity],
           language,
           chunkType: 'body',
