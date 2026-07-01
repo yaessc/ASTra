@@ -32,6 +32,7 @@ function getDb(cacheDir: string): Database.Database {
       end_line INTEGER NOT NULL,
       qdrant_id TEXT
     );
+    CREATE INDEX IF NOT EXISTS idx_indexed_chunks_file_path ON indexed_chunks(file_path);
     CREATE TABLE IF NOT EXISTS metadata (
       key TEXT PRIMARY KEY,
       value TEXT
