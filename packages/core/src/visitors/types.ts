@@ -8,4 +8,4 @@ export type EntityHandler = (
   source: string,
   filePath: string,
   language: SupportedLanguage,
-) => CodeEntity | null;
+) => CodeEntity | CodeEntity[] | null;

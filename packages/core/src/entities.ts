@@ -13,8 +13,11 @@ export function extractEntities(source: string, filePath: string, language: Supp
   function walk(n: SyntaxNode) {
     const handler = handlers[n.type];
     if (handler) {
-      const e = handler(n, source, filePath, language);
-      if (e) entities.push(e);
+      const result = handler(n, source, filePath, language);
+      if (result) {
+        if (Array.isArray(result)) entities.push(...result);
+        else entities.push(result);
+      }
     }
     for (let i = 0; i < n.namedChildCount; i++) {
       const child = n.namedChild(i);
