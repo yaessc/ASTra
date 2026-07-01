@@ -37,6 +37,13 @@ function extractPatternBindings(patternNode: SyntaxNode, source: string): string
         names.push(getNodeText(value, source));
       } else if (value && (value.type === 'object_pattern' || value.type === 'array_pattern')) {
         names.push(...extractPatternBindings(value, source));
+      } else if (value && value.type === 'assignment_pattern') {
+        const left = value.childForFieldName('left');
+        if (left?.type === 'identifier' || left?.type === 'shorthand_property_identifier_pattern') {
+          names.push(getNodeText(left, source));
+        } else if (left && (left.type === 'object_pattern' || left.type === 'array_pattern')) {
+          names.push(...extractPatternBindings(left, source));
+        }
       }
     } else if (t === 'object_assignment_pattern' || t === 'assignment_pattern') {
       const left = child.childForFieldName('left');

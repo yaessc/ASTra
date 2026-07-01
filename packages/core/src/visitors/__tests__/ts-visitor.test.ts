@@ -172,3 +172,33 @@ describe('multi-line signatures', () => {
     expect(entity?.signature).toBe('fn = (a: string, b: number): void =>');
   });
 });
+
+describe('destructuring with rename and default', () => {
+  it('renamed destructuring with default extracts binding name', () => {
+    const source = 'const { a: b = 1 } = obj;';
+    const node = firstNodeOfType(source, 'variable_declarator');
+    const entities = tsHandlers.variable_declarator(node, source, 'a.ts', 'typescript') as any;
+    const arr = entities as any[];
+    expect(arr).toHaveLength(1);
+    expect(arr[0].name).toBe('b');
+  });
+
+  it('renamed nested destructuring with default extracts inner bindings', () => {
+    const source = 'const { a: { b } = {} } = obj;';
+    const node = firstNodeOfType(source, 'variable_declarator');
+    const entities = tsHandlers.variable_declarator(node, source, 'a.ts', 'typescript') as any;
+    const arr = entities as any[];
+    expect(arr).toHaveLength(1);
+    expect(arr[0].name).toBe('b');
+  });
+
+  it('renamed array destructuring with default extracts all bindings', () => {
+    const source = 'const { a: [b, c] = [] } = obj;';
+    const node = firstNodeOfType(source, 'variable_declarator');
+    const entities = tsHandlers.variable_declarator(node, source, 'a.ts', 'typescript') as any;
+    const arr = entities as any[];
+    expect(arr).toHaveLength(2);
+    expect(arr[0].name).toBe('b');
+    expect(arr[1].name).toBe('c');
+  });
+});
