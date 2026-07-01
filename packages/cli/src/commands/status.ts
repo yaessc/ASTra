@@ -7,9 +7,10 @@ import pico from 'picocolors';
 import { resolve } from 'node:path';
 
 export async function statusCommand(options?: { dir?: string }): Promise<void> {
+  const rootDir = resolve(options?.dir || '.');
   let config;
   try {
-    config = loadConfig(resolve(options?.dir || '.'));
+    config = loadConfig(rootDir);
   } catch (err) {
     if (err instanceof ConfigValidationError) {
       intro(pico.cyan('astra status'));
@@ -28,13 +29,14 @@ export async function statusCommand(options?: { dir?: string }): Promise<void> {
   s.start('Fetching index stats...');
 
   try {
-    const stats = await getIndexStats(config);
+    const stats = await getIndexStats(config, rootDir);
     s.stop('Index stats retrieved');
 
     note(
       `Collection:  ${pico.green(config.collectionName)}
+Total files:  ${pico.yellow(String(stats.totalFiles))}
 Total chunks: ${pico.yellow(String(stats.totalChunks))}
-Vector size:  384 (Cosine)
+${stats.lastIndexed ? `Last indexed: ${pico.dim(stats.lastIndexed)}\n` : ''}Vector size:  384 (Cosine)
 Qdrant URL:   ${pico.dim(config.qdrantUrl)}
 Model:        ${pico.dim(config.modelId)}`,
       pico.cyan('Index Information'),

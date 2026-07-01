@@ -1,7 +1,7 @@
 import { QdrantClient } from '@qdrant/js-client-rest';
 import type { AstraConfig, CodeChunk, IndexStats } from './types.js';
 import { embedBatch } from './embedder.js';
-import { getCacheDir, storeChunkQdrantIds, removeIndexedChunks } from './cache.js';
+import { getCacheDir, storeChunkQdrantIds, removeIndexedChunks, getAllIndexedFilePaths, getLastIndexedMtime } from './cache.js';
 import { QdrantConnectionError } from './errors.js';
 import { createClient, safeQdrantCall } from './qdrant.js';
 import { createHash } from 'node:crypto';
@@ -145,8 +145,18 @@ export async function deleteFileChunks(filePath: string, config: AstraConfig): P
   }
 }
 
-export async function getIndexStats(config: AstraConfig): Promise<IndexStats> {
+export async function getIndexStats(config: AstraConfig, rootDir?: string): Promise<IndexStats> {
   const client = createClient(config);
+
+  let totalFiles = 0;
+  let lastIndexed: string | null = null;
+
+  if (rootDir) {
+    const cacheDir = getCacheDir(rootDir);
+    totalFiles = getAllIndexedFilePaths(cacheDir).length;
+    const lastMtime = getLastIndexedMtime(cacheDir);
+    if (lastMtime) lastIndexed = new Date(lastMtime).toISOString();
+  }
 
   try {
     const info = await safeQdrantCall(async () => {
@@ -155,17 +165,17 @@ export async function getIndexStats(config: AstraConfig): Promise<IndexStats> {
     const count = info.points_count ?? 0;
 
     return {
-      totalFiles: 0,
+      totalFiles,
       totalChunks: count,
-      lastIndexed: null,
+      lastIndexed,
       collectionSize: count,
     };
   } catch (err) {
     if (err instanceof QdrantConnectionError) throw err;
     return {
-      totalFiles: 0,
+      totalFiles,
       totalChunks: 0,
-      lastIndexed: null,
+      lastIndexed,
       collectionSize: 0,
     };
   }

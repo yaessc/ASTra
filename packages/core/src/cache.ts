@@ -106,6 +106,12 @@ export function setMetadata(cacheDir: string, key: string, value: string): void 
   d.prepare('INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)').run(key, value);
 }
 
+export function getLastIndexedMtime(cacheDir: string): number | null {
+  const d = getDb(cacheDir);
+  const row = d.prepare('SELECT MAX(mtime) as mtime FROM indexed_files').get() as any;
+  return row?.mtime ?? null;
+}
+
 export function clearCache(cacheDir: string): void {
   const d = getDb(cacheDir);
   d.exec('DELETE FROM indexed_files; DELETE FROM indexed_chunks; DELETE FROM metadata;');
