@@ -1,6 +1,6 @@
 import { QdrantClient } from '@qdrant/js-client-rest';
 import type { AstraConfig, CodeChunk, IndexStats } from './types.js';
-import { embedBatch, formatCodeForEmbedding } from './embedder.js';
+import { embedBatch } from './embedder.js';
 import { getCacheDir, storeChunkQdrantId, removeIndexedChunks } from './cache.js';
 import { QdrantConnectionError } from './errors.js';
 import { createClient, safeQdrantCall } from './qdrant.js';
@@ -55,15 +55,6 @@ export async function indexChunks(chunks: CodeChunk[], config: AstraConfig, root
   const client = await ensureCollection(config);
   const cacheDir = getCacheDir(rootDir);
 
-  const texts = chunks.map(c => formatCodeForEmbedding(c));
-  const embeddings = await embedBatch(texts, config);
-
-  const points = chunks.map((chunk, i) => ({
-    id: chunkIdToUUID(chunk.id),
-    vector: embeddings[i],
-    payload: chunkToPayload(chunk),
-  }));
-
   const filePaths = [...new Set(chunks.map(c => c.filePath))];
   for (const fp of filePaths) {
     await safeQdrantCall(async () => {
@@ -77,19 +68,41 @@ export async function indexChunks(chunks: CodeChunk[], config: AstraConfig, root
     removeIndexedChunks(cacheDir, fp);
   }
 
-  const batchSize = 100;
-  for (let i = 0; i < points.length; i += batchSize) {
-    const batch = points.slice(i, i + batchSize);
+  let upsertBatch: { id: string; vector: number[]; payload: Record<string, unknown> }[] = [];
+  const qdrantMappings: { chunk: CodeChunk; qdrantId: string }[] = [];
+
+  for await (const { chunk, embedding } of embedBatch(chunks, config)) {
+    const qdrantId = chunkIdToUUID(chunk.id);
+    qdrantMappings.push({ chunk, qdrantId });
+
+    upsertBatch.push({
+      id: qdrantId,
+      vector: embedding,
+      payload: chunkToPayload(chunk),
+    });
+
+    if (upsertBatch.length >= 100) {
+      await safeQdrantCall(async () => {
+        await client.upsert(config.collectionName, {
+          wait: true,
+          points: upsertBatch,
+        });
+      }, config);
+      upsertBatch = [];
+    }
+  }
+
+  if (upsertBatch.length > 0) {
     await safeQdrantCall(async () => {
       await client.upsert(config.collectionName, {
         wait: true,
-        points: batch,
+        points: upsertBatch,
       });
     }, config);
   }
 
-  for (const chunk of chunks) {
-    storeChunkQdrantId(cacheDir, chunk.id, chunk.filePath, chunk.startLine, chunk.endLine, chunkIdToUUID(chunk.id));
+  for (const { chunk, qdrantId } of qdrantMappings) {
+    storeChunkQdrantId(cacheDir, chunk.id, chunk.filePath, chunk.startLine, chunk.endLine, qdrantId);
   }
 }
 

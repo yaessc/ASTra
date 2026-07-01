@@ -25,31 +25,27 @@ export async function embedText(text: string, config: AstraConfig): Promise<numb
   return Array.from(result.data as Float32Array);
 }
 
-export async function embedBatch(
-  texts: string[],
+export async function* embedBatch(
+  chunks: CodeChunk[],
   config: AstraConfig,
-  onProgress?: (loaded: number, total: number) => void,
-): Promise<number[][]> {
+): AsyncGenerator<{ chunk: CodeChunk; embedding: number[] }> {
   if (!extractor) await initEmbedder(config);
 
-  const results: number[][] = [];
   const batchSize = 16;
 
-  for (let i = 0; i < texts.length; i += batchSize) {
-    const batch = texts.slice(i, i + batchSize);
-    const output = await extractor!(batch, { pooling: 'mean', normalize: true });
+  for (let i = 0; i < chunks.length; i += batchSize) {
+    const batchChunks = chunks.slice(i, i + batchSize);
+    const texts = batchChunks.map(c => formatCodeForEmbedding(c));
+    const output = await extractor!(texts, { pooling: 'mean', normalize: true });
     const dims = output.dims;
     const embeddingDim = dims ? dims[dims.length - 1] : 384;
-    for (let j = 0; j < batch.length; j++) {
+
+    for (let j = 0; j < batchChunks.length; j++) {
       const start = j * embeddingDim;
-      results.push(Array.from(output.data.slice(start, start + embeddingDim)));
-    }
-    if (onProgress) {
-      onProgress(Math.min(i + batchSize, texts.length), texts.length);
+      const embedding = Array.from(output.data.slice(start, start + embeddingDim));
+      yield { chunk: batchChunks[j], embedding };
     }
   }
-
-  return results;
 }
 
 function truncateLines(text: string, maxChars: number): string {
