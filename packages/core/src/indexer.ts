@@ -1,7 +1,7 @@
 import { QdrantClient } from '@qdrant/js-client-rest';
 import type { AstraConfig, CodeChunk, IndexStats } from './types.js';
 import { embedBatch, getEmbeddingDimension } from './embedder.js';
-import { getCacheDir, storeChunkQdrantIds, removeIndexedChunks, getAllIndexedFilePaths, getLastIndexedMtime } from './cache.js';
+import { getCacheDir, storeChunkQdrantIds, removeIndexedChunksBatch, getAllIndexedFilePaths, getLastIndexedMtime } from './cache.js';
 import { QdrantConnectionError } from './errors.js';
 import { createClient, safeQdrantCall } from './qdrant.js';
 import { createHash } from 'node:crypto';
@@ -67,16 +67,16 @@ export async function indexChunks(
   const cacheDir = getCacheDir(rootDir);
 
   const filePaths = [...new Set(chunks.map(c => c.filePath))];
-  for (const fp of filePaths) {
+  if (filePaths.length > 0) {
     await safeQdrantCall(async () => {
       await qdrantClient.delete(config.collectionName, {
         wait: true,
         filter: {
-          must: [{ key: 'filePath', match: { value: fp } }],
+          must: [{ key: 'filePath', match: { any: filePaths } }],
         },
       });
     }, config);
-    removeIndexedChunks(cacheDir, fp);
+    removeIndexedChunksBatch(cacheDir, filePaths);
   }
 
   let upsertBatch: {

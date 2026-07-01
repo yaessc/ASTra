@@ -158,7 +158,7 @@ describe('indexChunks', () => {
         must: expect.arrayContaining([
           expect.objectContaining({
             key: 'filePath',
-            match: { value: 'src/a.ts' },
+            match: { any: ['src/a.ts'] },
           }),
         ]),
       }),

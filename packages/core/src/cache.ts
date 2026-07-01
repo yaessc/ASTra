@@ -88,6 +88,18 @@ export function removeIndexedChunks(cacheDir: string, filePath: string): void {
   d.prepare('DELETE FROM indexed_chunks WHERE file_path = ?').run(filePath);
 }
 
+export function removeIndexedChunksBatch(cacheDir: string, filePaths: string[]): void {
+  if (filePaths.length === 0) return;
+  const d = getDb(cacheDir);
+  const del = d.prepare('DELETE FROM indexed_chunks WHERE file_path = ?');
+  const tx = d.transaction((paths: string[]) => {
+    for (const fp of paths) {
+      del.run(fp);
+    }
+  });
+  tx(filePaths);
+}
+
 export function storeChunkQdrantIds(
   cacheDir: string,
   mappings: { chunkId: string; filePath: string; startLine: number; endLine: number; qdrantId: string }[],

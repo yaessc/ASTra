@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import {
   getCacheDir, getIndexedFile, getAllIndexedFilePaths,
   setIndexedFile, setIndexedFiles, removeIndexedFile,
-  removeIndexedChunks, storeChunkQdrantIds,
+  removeIndexedChunks, removeIndexedChunksBatch, storeChunkQdrantIds,
   getMetadata, setMetadata, getLastIndexedMtime,
   clearCache, closeCache,
 } from '../cache.js';
@@ -88,6 +88,27 @@ describe('CRUD operations', () => {
       { chunkId: 'c1', filePath: 'a.ts', startLine: 1, endLine: 5, qdrantId: 'q1' },
     ]);
     // No error means success — we can also verify by re-inserting b.ts mapping
+    expect(() =>
+      storeChunkQdrantIds(cacheDir, [
+        { chunkId: 'c2', filePath: 'b.ts', startLine: 1, endLine: 5, qdrantId: 'q2' },
+      ])
+    ).not.toThrow();
+  });
+
+  it('removeIndexedChunksBatch deletes chunks matching multiple file paths', () => {
+    storeChunkQdrantIds(cacheDir, [
+      { chunkId: 'c1', filePath: 'a.ts', startLine: 1, endLine: 5, qdrantId: 'q1' },
+      { chunkId: 'c2', filePath: 'b.ts', startLine: 1, endLine: 5, qdrantId: 'q2' },
+      { chunkId: 'c3', filePath: 'c.ts', startLine: 1, endLine: 5, qdrantId: 'q3' },
+    ]);
+    removeIndexedChunksBatch(cacheDir, ['a.ts', 'c.ts']);
+    // Re-insert a.ts and c.ts mappings without conflict, and b.ts should still exist
+    storeChunkQdrantIds(cacheDir, [
+      { chunkId: 'c1', filePath: 'a.ts', startLine: 1, endLine: 5, qdrantId: 'q1' },
+      { chunkId: 'c3', filePath: 'c.ts', startLine: 1, endLine: 5, qdrantId: 'q3' },
+      { chunkId: 'c2', filePath: 'b.ts', startLine: 1, endLine: 5, qdrantId: 'q2' },
+    ]);
+    // No error means all three rows were deleted (no UNIQUE constraint violation)
     expect(() =>
       storeChunkQdrantIds(cacheDir, [
         { chunkId: 'c2', filePath: 'b.ts', startLine: 1, endLine: 5, qdrantId: 'q2' },
