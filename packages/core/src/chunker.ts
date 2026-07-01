@@ -45,10 +45,10 @@ export function chunkEntities(
     return chunks;
   }
 
-  entities.sort((a, b) => a.startLine - b.startLine);
+  const sorted = [...entities].sort((a, b) => a.startLine - b.startLine);
   const chunks: CodeChunk[] = [];
 
-  for (const entity of entities) {
+  for (const entity of sorted) {
     const metaContent = [entity.docComment, entity.signature]
       .filter(Boolean)
       .join('\n')
