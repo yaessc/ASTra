@@ -44,6 +44,13 @@ describe('ts-visitor handlers', () => {
     expect(entity?.name).toBe('@Controller');
   });
 
+  it('decorator extracts docComment from parent declaration', () => {
+    const source = '/** Doc */\n@decorator\nclass Foo {}';
+    const node = firstNodeOfType(source, 'decorator');
+    const entity = tsHandlers.decorator(node, source, 'a.ts', 'typescript') as any;
+    expect(entity?.docComment).toBe('/** Doc */');
+  });
+
   it('arrow function with preceding doc comment extracts docComment', () => {
     const source = `/** Greet a user by name */\nconst greet = (name: string) => name;`;
     const node = firstNodeOfType(source, 'variable_declarator');

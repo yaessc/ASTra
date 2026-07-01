@@ -165,7 +165,7 @@ export const tsHandlers: Record<string, EntityHandler> = {
       endLine: range.endLine,
       signature: getNodeText(node, source).trim(),
       code: getNodeText(node, source),
-      docComment: '',
+      docComment: findDocComment(node.parent ?? node, source),
       language,
     };
   },
