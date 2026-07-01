@@ -78,6 +78,23 @@ export function storeChunkQdrantId(cacheDir: string, chunkId: string, filePath: 
   d.prepare('INSERT OR REPLACE INTO indexed_chunks (id, file_path, start_line, end_line, qdrant_id) VALUES (?, ?, ?, ?, ?)').run(chunkId, filePath, startLine, endLine, qdrantId);
 }
 
+export function storeChunkQdrantIds(
+  cacheDir: string,
+  mappings: { chunkId: string; filePath: string; startLine: number; endLine: number; qdrantId: string }[],
+): void {
+  if (mappings.length === 0) return;
+  const d = getDb(cacheDir);
+  const insert = d.prepare(
+    'INSERT OR REPLACE INTO indexed_chunks (id, file_path, start_line, end_line, qdrant_id) VALUES (?, ?, ?, ?, ?)'
+  );
+  const tx = d.transaction((rows: typeof mappings) => {
+    for (const row of rows) {
+      insert.run(row.chunkId, row.filePath, row.startLine, row.endLine, row.qdrantId);
+    }
+  });
+  tx(mappings);
+}
+
 export function getMetadata(cacheDir: string, key: string): string | null {
   const d = getDb(cacheDir);
   const row = d.prepare('SELECT value FROM metadata WHERE key = ?').get(key) as any;

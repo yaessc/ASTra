@@ -1,7 +1,7 @@
 import { QdrantClient } from '@qdrant/js-client-rest';
 import type { AstraConfig, CodeChunk, IndexStats } from './types.js';
 import { embedBatch } from './embedder.js';
-import { getCacheDir, storeChunkQdrantId, removeIndexedChunks } from './cache.js';
+import { getCacheDir, storeChunkQdrantIds, removeIndexedChunks } from './cache.js';
 import { QdrantConnectionError } from './errors.js';
 import { createClient, safeQdrantCall } from './qdrant.js';
 import { createHash } from 'node:crypto';
@@ -117,9 +117,13 @@ export async function indexChunks(chunks: CodeChunk[], config: AstraConfig, root
     }, config);
   }
 
-  for (const { chunk, qdrantId } of qdrantMappings) {
-    storeChunkQdrantId(cacheDir, chunk.id, chunk.filePath, chunk.startLine, chunk.endLine, qdrantId);
-  }
+  storeChunkQdrantIds(cacheDir, qdrantMappings.map(({ chunk, qdrantId }) => ({
+    chunkId: chunk.id,
+    filePath: chunk.filePath,
+    startLine: chunk.startLine,
+    endLine: chunk.endLine,
+    qdrantId,
+  })));
 }
 
 export async function deleteFileChunks(filePath: string, config: AstraConfig): Promise<void> {
