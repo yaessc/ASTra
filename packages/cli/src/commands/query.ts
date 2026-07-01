@@ -21,6 +21,7 @@ const LANG_MAP: Record<string, string> = {
 };
 
 const queryHistory: string[] = [];
+const KNOWN_REPL = /^:(?:help|clear|history|exit|limit|mode)\b/;
 
 function formatCode(code: string, language: string): string {
   try {
@@ -323,7 +324,7 @@ export async function queryCommand(query?: string, options?: { limit?: string; m
 
     const trimmed = q.trim();
 
-    if (trimmed.startsWith(':')) {
+    if (KNOWN_REPL.test(trimmed)) {
       const result = await handleReplCommand(trimmed);
       if (result === -1) {
         outro('Goodbye!');
