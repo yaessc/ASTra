@@ -18,20 +18,22 @@ const ignore = createRequire(import.meta.url)('ignore') as {
   };
 };
 
-function findGitignore(dir: string): string[] {
-  const patterns: string[] = [];
+function findGitignore(dir: string): { dir: string; content: string }[] {
+  const results: { dir: string; content: string }[] = [];
   let current = dir;
   for (let i = 0; i < 10; i++) {
     try {
-      const gi = join(current, '.gitignore');
-      const content = readFileSync(gi, 'utf-8');
-      patterns.push(content);
-    } catch { /* not a git repo or no .gitignore */ }
+      const content = readFileSync(join(current, '.gitignore'), 'utf-8');
+      results.push({ dir: current, content });
+    } catch { /* no .gitignore in this directory */ }
     const parent = resolve(current, '..');
     if (parent === current) break;
+    try {
+      if (statSync(join(current, '.git')).isDirectory()) break;
+    } catch { /* not the repo root — continue */ }
     current = parent;
   }
-  return patterns;
+  return results;
 }
 
 function detectLanguage(filePath: string): SupportedLanguage | null {
@@ -44,13 +46,14 @@ function detectLanguage(filePath: string): SupportedLanguage | null {
 }
 
 export function scanFiles(rootDir: string, config: AstraConfig): ScanResult {
-  const ig = ignore();
+  const globalIg = ignore();
+  globalIg.add(['node_modules', 'dist', 'build', '.git']);
 
-  const gitignorePatterns = findGitignore(rootDir);
-  for (const p of gitignorePatterns) {
-    ig.add(p);
-  }
-  ig.add(['node_modules', 'dist', 'build', '.git']);
+  const gitignoreEntries = findGitignore(rootDir).map(e => {
+    const ig = ignore();
+    ig.add(e.content);
+    return { ig, dir: e.dir };
+  });
 
   const allFiles = globSync(config.include, {
     cwd: rootDir,
@@ -64,7 +67,16 @@ export function scanFiles(rootDir: string, config: AstraConfig): ScanResult {
   for (const filePath of allFiles) {
     try {
       const relPath = relative(rootDir, filePath).replace(/\\/g, '/');
-      if (ig.ignores(relPath)) continue;
+      if (globalIg.ignores(relPath)) continue;
+
+      let ignored = false;
+      for (const { ig, dir } of gitignoreEntries) {
+        if (ig.ignores(relative(dir, filePath).replace(/\\/g, '/'))) {
+          ignored = true;
+          break;
+        }
+      }
+      if (ignored) continue;
 
       const language = detectLanguage(filePath);
       if (!language) continue;
