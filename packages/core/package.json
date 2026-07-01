@@ -19,15 +19,14 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "web-tree-sitter": "^0.22.6",
-    "tree-sitter-typescript": "^0.23.2",
-    "tree-sitter-javascript": "^0.23.1",
     "@huggingface/transformers": "^3.0.0",
     "@qdrant/js-client-rest": "^1.9.0",
-    "picocolors": "^1.0.1",
-    "ignore": "^5.3.1",
-    "glob": "^11.0.0",
     "better-sqlite3": "^11.0.0",
+    "glob": "^11.0.0",
+    "ignore": "^5.3.1",
+    "picocolors": "^1.0.1",
+    "tree-sitter-typescript": "^0.23.2",
+    "web-tree-sitter": "^0.22.6",
     "zod": "^3.25.76"
   },
   "devDependencies": {
