@@ -171,6 +171,13 @@ describe('multi-line signatures', () => {
     const entity = tsHandlers.variable_declarator(node, source, 'a.ts', 'typescript') as any;
     expect(entity?.signature).toBe('fn = (a: string, b: number): void =>');
   });
+
+  it('multiline import preserves full text via fallback path', () => {
+    const source = 'import {\n  foo,\n  bar,\n} from "./module";';
+    const node = firstNodeOfType(source, 'import_statement');
+    const entity = tsHandlers.import_statement(node, source, 'a.ts', 'typescript') as any;
+    expect(entity?.signature).toBe(source);
+  });
 });
 
 describe('destructuring with rename and default', () => {

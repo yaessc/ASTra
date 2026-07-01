@@ -11,6 +11,19 @@ function getSignature(node: SyntaxNode, source: string): string {
   if (body) {
     return source.slice(node.startIndex, body.startIndex).trim();
   }
+
+  for (let i = 0; i < node.namedChildCount; i++) {
+    const child = node.namedChild(i);
+    if (child && (
+      child.type === 'class_body' ||
+      child.type === 'interface_body' ||
+      child.type === 'enum_body' ||
+      child.type === 'object_type'
+    )) {
+      return source.slice(node.startIndex, child.startIndex).trim();
+    }
+  }
+
   if (node.type === 'variable_declarator') {
     const value = node.childForFieldName('value');
     if (value) {
@@ -20,7 +33,8 @@ function getSignature(node: SyntaxNode, source: string): string {
       }
     }
   }
-  return getNodeText(node, source).split('\n')[0].trim();
+
+  return getNodeText(node, source).trim();
 }
 
 function isTopLevel(node: SyntaxNode): boolean {
