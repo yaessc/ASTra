@@ -18,18 +18,22 @@ export function chunkEntities(
 ): CodeChunk[] {
   if (entities.length === 0) {
     const lines = fullSource.split('\n');
-    const endLine = Math.min(lines.length, options.maxChunkSize);
-    const chunk: CodeChunk = {
-      id: `${filePath}:1-${endLine}:body`,
-      filePath,
-      startLine: 1,
-      endLine,
-      content: lines.slice(0, endLine).join('\n'),
-      entities: [],
-      language,
-      chunkType: 'body',
-    };
-    return [chunk];
+    const chunks: CodeChunk[] = [];
+    const chunkSize = options.maxChunkSize;
+    for (let i = 0; i < lines.length; i += chunkSize) {
+      const chunkEnd = Math.min(i + chunkSize, lines.length);
+      chunks.push({
+        id: `${filePath}:${i + 1}-${chunkEnd}:body`,
+        filePath,
+        startLine: i + 1,
+        endLine: chunkEnd,
+        content: lines.slice(i, chunkEnd).join('\n'),
+        entities: [],
+        language,
+        chunkType: 'body',
+      });
+    }
+    return chunks;
   }
 
   entities.sort((a, b) => a.startLine - b.startLine);

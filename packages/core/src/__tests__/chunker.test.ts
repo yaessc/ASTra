@@ -15,6 +15,20 @@ describe('chunkEntities — metadata guard', () => {
     expect(chunks[0].chunkType).toBe('body');
   });
 
+  it('windows all lines when no entities exist', () => {
+    const lines = Array.from({ length: 120 }, (_, i) => `line ${i + 1}`);
+    const source = lines.join('\n');
+    const chunks = chunkEntities([], 'a.ts', source, 'typescript', { maxChunkSize: 50 });
+    expect(chunks.length).toBe(3);
+    expect(chunks[0].startLine).toBe(1);
+    expect(chunks[0].endLine).toBe(50);
+    expect(chunks[1].startLine).toBe(51);
+    expect(chunks[1].endLine).toBe(100);
+    expect(chunks[2].startLine).toBe(101);
+    expect(chunks[2].endLine).toBe(120);
+    expect(chunks.every(c => c.content.length > 0)).toBe(true);
+  });
+
   it('produces both chunks when docComment is valid', () => {
     const chunks = chunkEntities(
       [{
