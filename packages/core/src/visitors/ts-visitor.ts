@@ -80,6 +80,18 @@ export const tsHandlers: Record<string, EntityHandler> = {
 
     const name = getNodeText(nameNode, source);
 
+    let docNode: SyntaxNode = node;
+    let p = node.parent;
+    while (p && (
+      p.type === 'lexical_declaration' ||
+      p.type === 'variable_declaration' ||
+      p.type === 'export_statement'
+    )) {
+      docNode = p;
+      p = p.parent;
+    }
+    const docComment = findDocComment(docNode, source);
+
     if (valueNode && (valueNode.type === 'arrow_function' || valueNode.type === 'function')) {
       const range = getNodeRange(node);
       return {
@@ -90,7 +102,7 @@ export const tsHandlers: Record<string, EntityHandler> = {
         endLine: range.endLine,
         signature: firstLine(node, source),
         code: getNodeText(valueNode, source),
-        docComment: findDocComment(valueNode, source),
+        docComment,
         language,
       };
     }
@@ -104,7 +116,7 @@ export const tsHandlers: Record<string, EntityHandler> = {
       endLine: range.endLine,
       signature: firstLine(node, source),
       code: getNodeText(node, source),
-      docComment: findDocComment(node, source),
+      docComment,
       language,
     };
   },

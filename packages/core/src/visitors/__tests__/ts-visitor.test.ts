@@ -43,4 +43,18 @@ describe('ts-visitor handlers', () => {
     const entity = tsHandlers.decorator(node, source, 'a.ts', 'typescript');
     expect(entity?.name).toBe('@Controller');
   });
+
+  it('arrow function with preceding doc comment extracts docComment', () => {
+    const source = `/** Greet a user by name */\nconst greet = (name: string) => name;`;
+    const node = firstNodeOfType(source, 'variable_declarator');
+    const entity = tsHandlers.variable_declarator(node, source, 'a.ts', 'typescript');
+    expect(entity?.docComment).toBe('/** Greet a user by name */');
+  });
+
+  it('export const with preceding doc comment extracts docComment', () => {
+    const source = `/** Application configuration */\nexport const APP_CONFIG = { port: 3000 };`;
+    const node = firstNodeOfType(source, 'variable_declarator');
+    const entity = tsHandlers.variable_declarator(node, source, 'a.ts', 'typescript');
+    expect(entity?.docComment).toBe('/** Application configuration */');
+  });
 });
