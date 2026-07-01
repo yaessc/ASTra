@@ -28,12 +28,14 @@ export function chunkEntities(
     const chunkSize = options.maxChunkSize;
     for (let i = 0; i < lines.length; i += chunkSize) {
       const chunkEnd = Math.min(i + chunkSize, lines.length);
+      const content = lines.slice(i, chunkEnd).join('\n');
+      if (content.trim().length === 0) continue;
       chunks.push({
         id: `${filePath}:${i + 1}-${chunkEnd}:body`,
         filePath,
         startLine: i + 1,
         endLine: chunkEnd,
-        content: lines.slice(i, chunkEnd).join('\n'),
+        content,
         entities: [],
         language,
         chunkType: 'body',
