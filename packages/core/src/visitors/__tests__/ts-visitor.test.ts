@@ -96,8 +96,10 @@ describe('ts-visitor handlers', () => {
       expect(arr).toHaveLength(2);
       expect(arr[0].name).toBe('query');
       expect(arr[0].type).toBe('variable');
+      expect(arr[0].signature).toBe('const query');
       expect(arr[1].name).toBe('limit');
       expect(arr[1].type).toBe('variable');
+      expect(arr[1].signature).toBe('const limit');
     });
 
     it('array destructuring emits one entity per binding', () => {
@@ -107,7 +109,9 @@ describe('ts-visitor handlers', () => {
       const arr = entities as any[];
       expect(arr).toHaveLength(2);
       expect(arr[0].name).toBe('a');
+      expect(arr[0].signature).toBe('const a');
       expect(arr[1].name).toBe('b');
+      expect(arr[1].signature).toBe('const b');
     });
 
     it('nested destructuring emits only leaf bindings', () => {
@@ -117,6 +121,7 @@ describe('ts-visitor handlers', () => {
       const arr = entities as any[];
       expect(arr).toHaveLength(1);
       expect(arr[0].name).toBe('b');
+      expect(arr[0].signature).toBe('const b');
     });
 
     it('destructuring with defaults emits bound names', () => {
@@ -126,6 +131,7 @@ describe('ts-visitor handlers', () => {
       const arr = entities as any[];
       expect(arr).toHaveLength(1);
       expect(arr[0].name).toBe('a');
+      expect(arr[0].signature).toBe('const a');
     });
 
     it('rest pattern extracts rest identifier', () => {
@@ -135,7 +141,9 @@ describe('ts-visitor handlers', () => {
       const arr = entities as any[];
       expect(arr).toHaveLength(2);
       expect(arr[0].name).toBe('a');
+      expect(arr[0].signature).toBe('const a');
       expect(arr[1].name).toBe('rest');
+      expect(arr[1].signature).toBe('const rest');
     });
 
     it('empty pattern emits no entities', () => {
@@ -152,7 +160,9 @@ describe('ts-visitor handlers', () => {
       const arr = entities as any[];
       expect(arr).toHaveLength(2);
       expect(arr[0].docComment).toBe('/** Query options */');
+      expect(arr[0].signature).toBe('const query');
       expect(arr[1].docComment).toBe('/** Query options */');
+      expect(arr[1].signature).toBe('const limit');
     });
   });
 });

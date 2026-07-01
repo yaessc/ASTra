@@ -194,13 +194,25 @@ export const tsHandlers: Record<string, EntityHandler> = {
       const isFunc = valueNode && (valueNode.type === 'arrow_function' || valueNode.type === 'function');
       const entityType: CodeEntity['type'] = isFunc ? 'function' : 'variable';
       const range = getNodeRange(node);
+
+      let keyword = '';
+      let p: SyntaxNode | null = node.parent;
+      while (p) {
+        if (p.type === 'lexical_declaration' || p.type === 'variable_declaration') {
+          const kindNode = p.childForFieldName('kind');
+          if (kindNode) keyword = getNodeText(kindNode, source) + ' ';
+          break;
+        }
+        p = p.parent;
+      }
+
       return bindings.map(name => ({
         type: entityType,
         name,
         filePath,
         startLine: range.startLine,
         endLine: range.endLine,
-        signature: getSignature(node, source),
+        signature: `${keyword}${name}`,
         code: isFunc && valueNode ? getNodeText(valueNode, source) : getNodeText(node, source),
         docComment,
         language,
