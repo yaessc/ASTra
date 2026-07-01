@@ -57,4 +57,25 @@ describe('ts-visitor handlers', () => {
     const entity = tsHandlers.variable_declarator(node, source, 'a.ts', 'typescript');
     expect(entity?.docComment).toBe('/** Application configuration */');
   });
+
+  it('export class with preceding doc comment extracts docComment', () => {
+    const source = `/** User model */\nexport class User {}`;
+    const node = firstNodeOfType(source, 'class_declaration');
+    const entity = tsHandlers.class_declaration(node, source, 'a.ts', 'typescript');
+    expect(entity?.docComment).toBe('/** User model */');
+  });
+
+  it('export function with preceding doc comment extracts docComment', () => {
+    const source = `/** Greet a user */\nexport function greet(name: string) {}`;
+    const node = firstNodeOfType(source, 'function_declaration');
+    const entity = tsHandlers.function_declaration(node, source, 'a.ts', 'typescript');
+    expect(entity?.docComment).toBe('/** Greet a user */');
+  });
+
+  it('export interface with preceding doc comment extracts docComment', () => {
+    const source = `/** API response */\nexport interface ApiResponse {}`;
+    const node = firstNodeOfType(source, 'interface_declaration');
+    const entity = tsHandlers.interface_declaration(node, source, 'a.ts', 'typescript');
+    expect(entity?.docComment).toBe('/** API response */');
+  });
 });
