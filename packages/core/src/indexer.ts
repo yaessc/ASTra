@@ -41,6 +41,13 @@ export async function ensureCollection(config: AstraConfig): Promise<QdrantClien
     });
   }, config).catch(() => {});
 
+  await safeQdrantCall(async () => {
+    await client.createPayloadIndex(config.collectionName, {
+      field_name: 'code',
+      field_schema: { type: 'text', tokenizer: 'word' },
+    });
+  }, config).catch(() => {});
+
   return client;
 }
 

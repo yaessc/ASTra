@@ -62,54 +62,17 @@ async function keywordSearch(
   config: AstraConfig,
   limit: number,
 ): Promise<SearchResult[]> {
-  const tokens = query
-    .toLowerCase()
-    .split(/[\s,.;:!?()[\]{}"'`<>/\\|=+\-_*&^%$#@~]+/)
-    .filter(t => t.length > 1);
-
-  if (tokens.length === 0) return [];
-
   const client = createClient(config);
 
-  const should: any[] = [];
-  for (const token of tokens) {
-    should.push(
-      { key: 'entityNames', match: { value: token } },
-      { key: 'firstEntitySignature', match: { text: token } },
-    );
-  }
-
   const response = await safeQdrantCall(async () => {
-    return await client.scroll(config.collectionName, {
-      limit: limit * 2,
-      filter: { should },
+    return await client.query(config.collectionName, {
+      query: { text: query, model: 'qdrant/bm25' },
+      limit,
       with_payload: true,
-      with_vector: false,
     });
   }, config);
 
-  const points = response.points;
-  if (!points) return [];
-
-  const scored = points
-    .map((p: { id: string | number; payload?: Record<string, unknown> | null }) => {
-      const pl = toQdrantPayload(p.payload);
-      const matchCount = tokens.filter(t => {
-        const names = pl.entityNames;
-        const sig = pl.firstEntitySignature;
-        return names.includes(t) || sig.toLowerCase().includes(t);
-      }).length;
-
-      return { point: p, score: matchCount / tokens.length };
-    })
-    .filter(r => r.score > 0)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, limit);
-
-  return scored.map(s => ({
-    ...mapResult(s.point),
-    score: s.score,
-  }));
+  return response.points.map(mapResult);
 }
 
 export function rrfMerge(
