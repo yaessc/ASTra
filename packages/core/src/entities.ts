@@ -7,24 +7,28 @@ type SyntaxNode = Parser.SyntaxNode;
 
 export function extractEntities(source: string, filePath: string, language: SupportedLanguage): CodeEntity[] {
   const { tree } = parseFile(source, language);
-  const handlers = getHandlers(language);
-  const entities: CodeEntity[] = [];
+  try {
+    const handlers = getHandlers(language);
+    const entities: CodeEntity[] = [];
 
-  function walk(n: SyntaxNode) {
-    const handler = handlers[n.type];
-    if (handler) {
-      const result = handler(n, source, filePath, language);
-      if (result) {
-        if (Array.isArray(result)) entities.push(...result);
-        else entities.push(result);
+    function walk(n: SyntaxNode) {
+      const handler = handlers[n.type];
+      if (handler) {
+        const result = handler(n, source, filePath, language);
+        if (result) {
+          if (Array.isArray(result)) entities.push(...result);
+          else entities.push(result);
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const child = n.namedChild(i);
+        if (child) walk(child);
       }
     }
-    for (let i = 0; i < n.namedChildCount; i++) {
-      const child = n.namedChild(i);
-      if (child) walk(child);
-    }
-  }
 
-  walk(tree.rootNode);
-  return entities;
+    walk(tree.rootNode);
+    return entities;
+  } finally {
+    tree.delete();
+  }
 }
