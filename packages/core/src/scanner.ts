@@ -5,6 +5,12 @@ import { createHash } from 'node:crypto';
 import { createRequire } from 'node:module';
 import type { AstraConfig, ScannedFile, ScanResult, SupportedLanguage } from './types.js';
 
+export function readFileWithHash(filePath: string): { content: string; hash: string } {
+  const content = readFileSync(filePath, 'utf-8');
+  const hash = createHash('md5').update(content).digest('hex');
+  return { content, hash };
+}
+
 const ignore = createRequire(import.meta.url)('ignore') as {
   (options?: { ignorecase?: boolean }): {
     add(patterns: string | readonly string[]): void;
@@ -66,16 +72,11 @@ export function scanFiles(rootDir: string, config: AstraConfig): ScanResult {
       const stat = statSync(filePath);
       if (!stat.isFile()) continue;
 
-      const content = readFileSync(filePath, 'utf-8');
-      const hash = createHash('md5').update(content).digest('hex');
-
       files.push({
         path: filePath,
         relativePath: relPath,
         language,
-        content,
         mtime: stat.mtimeMs,
-        hash,
       });
     } catch {
       continue;

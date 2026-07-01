@@ -1,10 +1,11 @@
 import { resolve } from 'node:path';
 import {
-  loadConfig, scanFiles, initLanguages, extractEntities,
+  loadConfig, scanFiles, readFileWithHash, initLanguages, extractEntities,
   chunkEntities, initEmbedder, indexChunks, setIndexedFile,
   getIndexedFile, getAllIndexedFilePaths,
   removeIndexedFile, removeIndexedChunks, deleteFileChunks,
   getCacheDir, closeCache, ConfigValidationError, QdrantConnectionError,
+  type ScannedFile,
 } from '@astra/core';
 import { intro, spinner, note, outro } from '@clack/prompts';
 import pico from 'picocolors';
@@ -94,10 +95,16 @@ export async function indexCommand(dir: string = '.'): Promise<void> {
       return;
     }
 
-    const changedFiles = files.filter(f => {
+    type EnrichedFile = ScannedFile & { content: string; hash: string };
+    const changedFiles: EnrichedFile[] = [];
+
+    for (const f of files) {
       const cached = getIndexedFile(cacheDir, f.relativePath);
-      return !cached || cached.hash !== f.hash;
-    });
+      if (cached && cached.mtime === f.mtime) continue;
+      const { content, hash } = readFileWithHash(f.path);
+      if (cached && cached.hash === hash) continue;
+      changedFiles.push({ ...f, content, hash });
+    }
 
     const cachedCount = files.length - changedFiles.length;
 
@@ -110,7 +117,7 @@ export async function indexCommand(dir: string = '.'): Promise<void> {
 
     s.start(`Parsing ${changedFiles.length} files...`);
 
-    const allChunks: { file: typeof changedFiles[0]; chunks: any[] }[] = [];
+    const allChunks: { file: EnrichedFile; chunks: any[] }[] = [];
 
     for (const file of changedFiles) {
       try {

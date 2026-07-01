@@ -3,7 +3,7 @@ export type {
   SupportedLanguage, IndexedFile, ScanResult, ScannedFile,
 } from './types.js';
 export { loadConfig, writeDefaultConfig } from './config.js';
-export { scanFiles } from './scanner.js';
+export { scanFiles, readFileWithHash } from './scanner.js';
 export { initLanguages } from './languages.js';
 export { parseFile } from './parser.js';
 export { extractEntities } from './entities.js';

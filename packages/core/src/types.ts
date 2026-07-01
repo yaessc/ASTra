@@ -61,9 +61,7 @@ export interface ScannedFile {
   path: string;
   relativePath: string;
   language: SupportedLanguage;
-  content: string;
   mtime: number;
-  hash: string;
 }
 
 export interface ScanResult {
