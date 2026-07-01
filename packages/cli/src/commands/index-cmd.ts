@@ -161,37 +161,41 @@ export async function indexCommand(dir: string = '.'): Promise<void> {
 
     const qdrantClient = await ensureCollection(config);
 
-    for (const { file, chunks } of allChunks) {
-      try {
-        await indexChunks(chunks, config, rootDir, qdrantClient);
+    const allFileChunks = allChunks.flatMap(({ chunks }) => chunks);
+
+    try {
+      await indexChunks(allFileChunks, config, rootDir, qdrantClient, (indexedCount) => {
+        const elapsed = (Date.now() - startTime) / 1000;
+        const speed = elapsed > 0 ? Math.round(indexedCount / elapsed) : 0;
+        const eta = totalChunks > indexedCount && speed > 0
+          ? Math.round((totalChunks - indexedCount) / speed)
+          : 0;
+        const etaStr = eta > 0 ? `${eta}s` : '--';
+        progressBar.update(indexedCount, { speed: String(speed), eta_formatted: etaStr });
+      });
+
+      for (const { file, chunks } of allChunks) {
         setIndexedFile(cacheDir, {
           path: file.relativePath,
           mtime: file.mtime,
           hash: file.hash,
         });
-
         processedFiles++;
         chunksDone += chunks.length;
-        const elapsed = (Date.now() - startTime) / 1000;
-        const speed = elapsed > 0 ? Math.round(chunksDone / elapsed) : 0;
-        const eta = totalChunks > chunksDone && speed > 0
-          ? Math.round((totalChunks - chunksDone) / speed)
-          : 0;
-        const etaStr = eta > 0 ? `${eta}s` : '--';
-        progressBar.update(chunksDone, { speed: String(speed), eta_formatted: etaStr });
-      } catch (err) {
-        errorCount++;
-        if (err instanceof QdrantConnectionError) {
-          progressBar.stop();
-          note(err.message, 'Qdrant Error');
-          outro('Indexing stopped. Fix the issue and re-run.');
-          return;
-        }
-        const msg = err instanceof Error ? err.message : String(err);
-        note(`${file.relativePath}: ${msg}`, 'Warning');
       }
+    } catch (err) {
+      errorCount++;
+      if (err instanceof QdrantConnectionError) {
+        progressBar.stop();
+        note(err.message, 'Qdrant Error');
+        outro('Indexing stopped. Fix the issue and re-run.');
+        return;
+      }
+      const msg = err instanceof Error ? err.message : String(err);
+      note(`Indexing failed: ${msg}`, 'Warning');
     }
 
+    progressBar.update(totalChunks, { speed: '0', eta_formatted: '--' });
     progressBar.stop();
 
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);

@@ -61,6 +61,7 @@ export async function indexChunks(
   config: AstraConfig,
   rootDir: string,
   client?: QdrantClient,
+  onProgress?: (indexedCount: number) => void,
 ): Promise<void> {
   const qdrantClient = client ?? await ensureCollection(config);
   const cacheDir = getCacheDir(rootDir);
@@ -84,8 +85,11 @@ export async function indexChunks(
     payload: Record<string, unknown>;
   }[] = [];
   const qdrantMappings: { chunk: CodeChunk; qdrantId: string }[] = [];
+  let indexedCount = 0;
 
   for await (const { chunk, embedding } of embedBatch(chunks, config)) {
+    indexedCount++;
+    onProgress?.(indexedCount);
     const qdrantId = chunkIdToUUID(chunk.id);
     qdrantMappings.push({ chunk, qdrantId });
 
