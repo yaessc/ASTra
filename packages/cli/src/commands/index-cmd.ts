@@ -5,7 +5,7 @@ import {
   getIndexedFile, getAllIndexedFilePaths,
   removeIndexedFile, removeIndexedChunks, deleteFileChunks,
   getCacheDir, closeCache, ConfigValidationError, QdrantConnectionError,
-  type ScannedFile, type IndexedFile,
+  type ScannedFile, type IndexedFile, type CodeChunk,
 } from '@astra/core';
 import { intro, spinner, note, outro } from '@clack/prompts';
 import pico from 'picocolors';
@@ -120,7 +120,7 @@ export async function indexCommand(dir: string = '.'): Promise<void> {
 
     s.start(`Parsing ${changedFiles.length} files...`);
 
-    const allChunks: { file: EnrichedFile; chunks: any[] }[] = [];
+    const allChunks: { file: EnrichedFile; chunks: CodeChunk[] }[] = [];
 
     for (const file of changedFiles) {
       try {

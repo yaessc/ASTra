@@ -1,7 +1,7 @@
 import {
   loadConfig, initEmbedder, searchHybrid,
   ensureCollection, ConfigValidationError, QdrantConnectionError,
-  type SearchMode, type AstraConfig,
+  type SearchMode, type AstraConfig, type SearchResult,
 } from '@astra/core';
 import { intro, spinner, note, outro, text, select, isCancel } from '@clack/prompts';
 import pico from 'picocolors';
@@ -30,7 +30,7 @@ function formatCode(code: string, language: string): string {
   }
 }
 
-function displayResult(r: { filePath: string; startLine: number; endLine: number; score: number; code: string; language: string }, index: number): void {
+function displayResult(r: SearchResult, index: number): void {
   const lines = r.code.split('\n');
   const maxLines = 30;
   const displayLines = lines.slice(0, maxLines);
@@ -109,7 +109,7 @@ async function openInEditor(filePath: string, line: number, rootDir: string): Pr
   }
 }
 
-async function runSearch(query: string, limit: number, mode: SearchMode, config: AstraConfig): Promise<any[]> {
+async function runSearch(query: string, limit: number, mode: SearchMode, config: AstraConfig): Promise<SearchResult[]> {
   const s = spinner();
 
   s.start('Searching...');
@@ -143,7 +143,7 @@ async function runSearch(query: string, limit: number, mode: SearchMode, config:
   return results;
 }
 
-async function postSearchMenu(results: any[], rootDir: string): Promise<'search' | 'exit'> {
+async function postSearchMenu(results: SearchResult[], rootDir: string): Promise<'search' | 'exit'> {
   console.log(`\n  ${pico.dim('─'.repeat(60))}`);
 
   const action = await select({
@@ -159,7 +159,7 @@ async function postSearchMenu(results: any[], rootDir: string): Promise<'search'
   if (action === 'search') return 'search';
 
   if (action === 'open') {
-    const choices = results.map((r: any, i: number) => ({
+    const choices = results.map((r: SearchResult, i: number) => ({
       value: i,
       label: `${r.filePath}:${r.startLine}-${r.endLine} (${(r.score * 100).toFixed(0)}%)`,
     }));
