@@ -13,7 +13,7 @@ export interface AstraConfig {
 }
 
 export interface CodeEntity {
-  type: 'function' | 'method' | 'class' | 'interface' | 'type' | 'enum' | 'variable' | 'decorator' | 'export' | 'import';
+  type: 'function' | 'method' | 'class' | 'interface' | 'type' | 'enum' | 'variable' | 'decorator' | 'export' | 'import' | 'field';
   name: string;
   filePath: string;
   startLine: number;

@@ -152,6 +152,7 @@ export const tsHandlers: Record<string, EntityHandler> = {
   interface_declaration: namedEntity('interface'),
   type_alias_declaration: namedEntity('type'),
   enum_declaration: namedEntity('enum'),
+  public_field_definition: namedEntity('field'),
 
   decorator(node, source, filePath, language) {
     const name = getNodeText(node, source).split(/[(\s]/)[0];

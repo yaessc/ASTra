@@ -242,4 +242,13 @@ describe('scope filtering for variables', () => {
     expect(entity.type).toBe('function');
     expect(entity.name).toBe('fn');
   });
+
+  it('class field is indexed with type field', () => {
+    const source = 'class Foo { bar = 1; }';
+    const node = firstNodeOfType(source, 'public_field_definition');
+    const entity = tsHandlers.public_field_definition(node, source, 'a.ts', 'typescript') as any;
+    expect(entity?.type).toBe('field');
+    expect(entity?.name).toBe('bar');
+    expect(entity?.signature).toBe('bar = 1');
+  });
 });
