@@ -113,7 +113,18 @@ async function runSearch(query: string, limit: number, mode: SearchMode, config:
   const s = spinner();
 
   s.start('Searching...');
-  const results = await searchHybrid(query, config, limit, { mode });
+  let results;
+  try {
+    results = await searchHybrid(query, config, limit, { mode });
+  } catch (err) {
+    s.stop('Search failed');
+    if (err instanceof QdrantConnectionError) {
+      note(err.message, 'Connection Error');
+    } else {
+      note(err instanceof Error ? err.message : String(err), 'Search Error');
+    }
+    return [];
+  }
   s.stop(`Found ${results.length} results`);
 
   if (results.length === 0) {
@@ -339,13 +350,17 @@ export async function queryCommand(query?: string, options?: { limit?: string; m
 
     console.log(`  ${pico.dim(pico.cyan('›'))} ${pico.dim(trimmed)}`);
     queryHistory.push(trimmed);
-    const results = await runSearch(trimmed, limit, mode, config);
-    if (results.length > 0) {
-      const next = await postSearchMenu(results, rootDir);
-      if (next === 'exit') {
-        outro('Goodbye!');
-        break;
+    try {
+      const results = await runSearch(trimmed, limit, mode, config);
+      if (results.length > 0) {
+        const next = await postSearchMenu(results, rootDir);
+        if (next === 'exit') {
+          outro('Goodbye!');
+          break;
+        }
       }
+    } catch (err) {
+      note(err instanceof Error ? err.message : String(err), 'Unexpected Error');
     }
   }
 }
