@@ -256,9 +256,22 @@ export async function queryCommand(query?: string, options?: { limit?: string; m
     throw err;
   }
 
-  let limit = parseInt(options?.limit || '10', 10);
-
   intro(pico.cyan('astra query'));
+
+  let limit = parseInt(options?.limit || '10', 10);
+  if (isNaN(limit) || limit < 1) {
+    note(`Invalid limit "${options?.limit}". Must be a positive number.`, 'Invalid Option');
+    outro('Done');
+    return;
+  }
+
+  const VALID_MODES = ['vector', 'keyword', 'hybrid'] as const;
+  const modeRaw = options?.mode || 'hybrid';
+  if (!VALID_MODES.includes(modeRaw as (typeof VALID_MODES)[number])) {
+    note(`Invalid mode "${options?.mode}". Must be one of: ${VALID_MODES.join(', ')}`, 'Invalid Option');
+    outro('Done');
+    return;
+  }
 
   const s = spinner();
   s.start('Initializing...');
@@ -306,7 +319,7 @@ export async function queryCommand(query?: string, options?: { limit?: string; m
     return;
   }
 
-  let mode = (options?.mode || 'hybrid') as SearchMode;
+  let mode = modeRaw as SearchMode;
 
   if (query) {
     queryHistory.push(query);
