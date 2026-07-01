@@ -1,4 +1,5 @@
 import type { CodeEntity, CodeChunk, SupportedLanguage } from './types.js';
+import { truncateAtLineBoundary } from './parser.js';
 
 export interface ChunkOptions {
   maxChunkSize: number;
@@ -9,12 +10,6 @@ export interface ChunkOptions {
 }
 
 const MIN_META_LENGTH = 10;
-
-function truncateAtLineBoundary(text: string, maxChars: number): string {
-  if (text.length <= maxChars) return text;
-  const end = text.lastIndexOf('\n', maxChars);
-  return end > 0 ? text.slice(0, end) : text.slice(0, maxChars);
-}
 
 export function chunkEntities(
   entities: CodeEntity[],

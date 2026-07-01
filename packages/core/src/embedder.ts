@@ -1,5 +1,6 @@
 import { ModelLoadError } from './errors.js';
 import type { AstraConfig, CodeChunk } from './types.js';
+import { truncateAtLineBoundary } from './parser.js';
 
 interface FeatureExtractor {
   (text: string | string[], options?: { pooling?: string; normalize?: boolean }): Promise<{ data: Float32Array; dims?: number[] }>;
@@ -60,12 +61,6 @@ export async function* embedBatch(
   }
 }
 
-function truncateLines(text: string, maxChars: number): string {
-  if (text.length <= maxChars) return text;
-  const end = text.lastIndexOf('\n', maxChars);
-  return end > 0 ? text.slice(0, end) : text.slice(0, maxChars);
-}
-
 export function formatCodeForEmbedding(chunk: CodeChunk): string {
   if (chunk.chunkType === 'metadata') {
     return chunk.content;
@@ -78,8 +73,8 @@ export function formatCodeForEmbedding(chunk: CodeChunk): string {
   }
 
   if (parts.length > 0) {
-    return parts.join('\n') + '\n\n' + truncateLines(chunk.content, 3000);
+    return parts.join('\n') + '\n\n' + truncateAtLineBoundary(chunk.content, 3000);
   }
 
-  return truncateLines(chunk.content, 3000);
+  return truncateAtLineBoundary(chunk.content, 3000);
 }

@@ -24,3 +24,9 @@ export function getNodeRange(node: Parser.SyntaxNode): { startLine: number; endL
     endLine: node.endPosition.row + 1,
   };
 }
+
+export function truncateAtLineBoundary(text: string, maxChars: number): string {
+  if (text.length <= maxChars) return text;
+  const end = text.lastIndexOf('\n', maxChars);
+  return end > 0 ? text.slice(0, end) : text.slice(0, maxChars);
+}
