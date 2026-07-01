@@ -38,7 +38,7 @@ function detectLanguage(filePath: string): SupportedLanguage | null {
   const ext = filePath.toLowerCase();
   if (ext.endsWith('.tsx')) return 'tsx';
   if (ext.endsWith('.ts')) return 'typescript';
-  if (ext.endsWith('.jsx')) return 'tsx';
+  if (ext.endsWith('.jsx')) return 'javascript';
   if (ext.endsWith('.js')) return 'javascript';
   return null;
 }
