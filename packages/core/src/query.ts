@@ -1,4 +1,4 @@
-import type { AstraConfig, SearchResult, QdrantCodeChunkPayload, SupportedLanguage } from './types.js';
+import type { AstraConfig, CodeEntity, SearchResult, QdrantCodeChunkPayload, SupportedLanguage } from './types.js';
 import { embedText } from './embedder.js';
 import { createClient, safeQdrantCall } from './qdrant.js';
 
@@ -12,6 +12,7 @@ function toQdrantPayload(payload: Record<string, unknown> | null | undefined): Q
     entityTypes: Array.isArray(payload?.entityTypes) ? payload.entityTypes as string[] : [],
     entityNames: Array.isArray(payload?.entityNames) ? payload.entityNames as string[] : [],
     firstEntitySignature: String(payload?.firstEntitySignature ?? ''),
+    entities: Array.isArray(payload?.entities) ? payload.entities as Array<Record<string, unknown>> : [],
     entitiesJson: String(payload?.entitiesJson ?? '[]'),
     code: String(payload?.code ?? ''),
     language: String(payload?.language ?? 'typescript'),
@@ -32,7 +33,13 @@ function mapResult(r: {
     endLine: p.endLine,
     score: r.score ?? 0,
     code: p.code,
-    entities: JSON.parse(p.entitiesJson),
+    entities: (
+      p.entities.length > 0
+        ? p.entities as unknown as CodeEntity[]
+        : p.entitiesJson !== '[]'
+          ? JSON.parse(p.entitiesJson) as CodeEntity[]
+          : []
+    ),
     language: p.language as SupportedLanguage,
     chunkType: p.chunkType as 'metadata' | 'body',
   };

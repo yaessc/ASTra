@@ -80,6 +80,7 @@ export interface QdrantCodeChunkPayload {
   entityTypes: string[];
   entityNames: string[];
   firstEntitySignature: string;
+  entities: Array<Record<string, unknown>>;
   entitiesJson: string;
   code: string;
   language: string;
