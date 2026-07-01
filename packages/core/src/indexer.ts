@@ -53,6 +53,18 @@ export async function ensureCollection(config: AstraConfig): Promise<QdrantClien
     }
   }, config);
 
+  try {
+    await safeQdrantCall(async () => {
+      await client.createPayloadIndex(config.collectionName, {
+        field_name: 'filePath',
+        field_schema: 'keyword',
+        wait: true,
+      });
+    }, config);
+  } catch {
+    // Payload index is a performance optimization, not a correctness requirement
+  }
+
   return client;
 }
 

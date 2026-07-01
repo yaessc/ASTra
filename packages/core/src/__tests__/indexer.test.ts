@@ -4,6 +4,7 @@ import type { AstraConfig, CodeChunk } from '../types.js';
 // Must mock before importing the module under test
 const mockGetCollections = vi.fn();
 const mockCreateCollection = vi.fn();
+const mockCreatePayloadIndex = vi.fn();
 const mockDelete = vi.fn();
 const mockUpsert = vi.fn();
 const mockGetCollection = vi.fn();
@@ -14,6 +15,7 @@ vi.mock('@qdrant/js-client-rest', () => ({
   QdrantClient: vi.fn().mockImplementation(() => ({
     getCollections: mockGetCollections,
     createCollection: mockCreateCollection,
+    createPayloadIndex: mockCreatePayloadIndex,
     delete: mockDelete,
     upsert: mockUpsert,
     getCollection: mockGetCollection,
