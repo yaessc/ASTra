@@ -14,7 +14,7 @@ function chunkToPayload(chunk: CodeChunk) {
     entityTypes: [...new Set(chunk.entities.map(e => e.type))],
     entityNames: chunk.entities.map(e => e.name),
     firstEntitySignature: chunk.entities[0]?.signature || '',
-    entitiesJson: JSON.stringify(chunk.entities),
+    entitiesJson: JSON.stringify(chunk.entities.map(({ code: _code, ...rest }) => rest)),
     code: chunk.content.slice(0, 4000),
     language: chunk.language,
     chunkType: chunk.chunkType,
