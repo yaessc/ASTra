@@ -1,5 +1,5 @@
 import {
-  loadConfig, getIndexStats,
+  loadConfig, getIndexStats, closeCache,
   ConfigValidationError, QdrantConnectionError,
 } from '@astra/core';
 import { intro, spinner, note, outro } from '@clack/prompts';
@@ -48,6 +48,8 @@ Model:        ${pico.dim(config.modelId)}`,
     } else {
       note('Could not connect to Qdrant. Is it running?', 'Error');
     }
+  } finally {
+    closeCache();
   }
 
   outro('Run `astra index` to (re)index your codebase.');
