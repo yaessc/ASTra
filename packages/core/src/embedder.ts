@@ -1,3 +1,4 @@
+import { ModelLoadError } from './errors.js';
 import type { AstraConfig, CodeChunk } from './types.js';
 
 interface FeatureExtractor {
@@ -12,11 +13,15 @@ export async function initEmbedder(
   onProgress?: (progress: any) => void,
 ): Promise<void> {
   if (extractor && loadedModelId === config.modelId) return;
-  const { pipeline } = await import('@huggingface/transformers');
-  extractor = await pipeline('feature-extraction', config.modelId, {
-    progress_callback: onProgress,
-  }) as unknown as FeatureExtractor;
-  loadedModelId = config.modelId;
+  try {
+    const { pipeline } = await import('@huggingface/transformers');
+    extractor = await pipeline('feature-extraction', config.modelId, {
+      progress_callback: onProgress,
+    }) as unknown as FeatureExtractor;
+    loadedModelId = config.modelId;
+  } catch (err) {
+    throw new ModelLoadError(`Failed to load embedding model "${config.modelId}"`, err);
+  }
 }
 
 export async function getEmbeddingDimension(config: AstraConfig): Promise<number> {
