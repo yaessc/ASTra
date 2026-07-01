@@ -1,11 +1,11 @@
 import { resolve } from 'node:path';
 import {
   loadConfig, scanFiles, readFileWithHash, initLanguages, extractEntities,
-  chunkEntities, initEmbedder, ensureCollection, indexChunks, setIndexedFile,
+  chunkEntities, initEmbedder, ensureCollection, indexChunks, setIndexedFile, setIndexedFiles,
   getIndexedFile, getAllIndexedFilePaths,
   removeIndexedFile, removeIndexedChunks, deleteFileChunks,
   getCacheDir, closeCache, ConfigValidationError, QdrantConnectionError,
-  type ScannedFile,
+  type ScannedFile, type IndexedFile,
 } from '@astra/core';
 import { intro, spinner, note, outro } from '@clack/prompts';
 import pico from 'picocolors';
@@ -155,7 +155,6 @@ export async function indexCommand(dir: string = '.'): Promise<void> {
     progressBar.start(totalChunks, 0, { speed: '0', eta_formatted: '--' });
 
     let processedFiles = 0;
-    let chunksDone = 0;
     let errorCount = 0;
     const startTime = Date.now();
 
@@ -174,15 +173,13 @@ export async function indexCommand(dir: string = '.'): Promise<void> {
         progressBar.update(indexedCount, { speed: String(speed), eta_formatted: etaStr });
       });
 
-      for (const { file, chunks } of allChunks) {
-        setIndexedFile(cacheDir, {
-          path: file.relativePath,
-          mtime: file.mtime,
-          hash: file.hash,
-        });
-        processedFiles++;
-        chunksDone += chunks.length;
-      }
+      const indexedFiles: IndexedFile[] = allChunks.map(({ file }) => ({
+        path: file.relativePath,
+        mtime: file.mtime,
+        hash: file.hash,
+      }));
+      setIndexedFiles(cacheDir, indexedFiles);
+      processedFiles = allChunks.length;
     } catch (err) {
       errorCount++;
       if (err instanceof QdrantConnectionError) {

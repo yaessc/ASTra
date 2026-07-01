@@ -65,6 +65,18 @@ export function setIndexedFile(cacheDir: string, file: IndexedFile): void {
   d.prepare('INSERT OR REPLACE INTO indexed_files (path, mtime, hash) VALUES (?, ?, ?)').run(file.path, file.mtime, file.hash);
 }
 
+export function setIndexedFiles(cacheDir: string, files: IndexedFile[]): void {
+  if (files.length === 0) return;
+  const d = getDb(cacheDir);
+  const insert = d.prepare('INSERT OR REPLACE INTO indexed_files (path, mtime, hash) VALUES (?, ?, ?)');
+  const tx = d.transaction((rows: IndexedFile[]) => {
+    for (const row of rows) {
+      insert.run(row.path, row.mtime, row.hash);
+    }
+  });
+  tx(files);
+}
+
 export function removeIndexedFile(cacheDir: string, filePath: string): void {
   const d = getDb(cacheDir);
   d.prepare('DELETE FROM indexed_files WHERE path = ?').run(filePath);
