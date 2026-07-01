@@ -7,7 +7,7 @@ import type { AstraConfig } from './types.js';
 const AstraConfigSchema = z.object({
   include: z.array(z.string()).default(['src/**/*.ts', 'src/**/*.tsx', 'src/**/*.js', 'src/**/*.jsx']),
   exclude: z.array(z.string()).default(['**/node_modules/**', '**/dist/**', '**/build/**', '**/*.test.ts', '**/*.spec.ts', '**/*.d.ts']),
-  qdrantUrl: z.string().min(1, 'Must be a URL like http://localhost:6333').default('http://localhost:6333'),
+  qdrantUrl: z.string().url('Must be a valid URL starting with http:// or https://').default('http://localhost:6333'),
   collectionName: z.string().min(1, 'Collection name cannot be empty').default('code_chunks'),
   modelId: z.string().min(1, 'Model ID cannot be empty').default('Xenova/all-MiniLM-L6-v2'),
   // maxChunkSize controls the line window for files with zero AST entities
