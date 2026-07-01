@@ -100,7 +100,7 @@ export function rrfMerge(
     }
   }
 
-  const maxScore = Math.max(...[...scores.values()].map(v => v.rrfScore), 1e-10);
+  const maxScore = [...scores.values()].reduce((max, v) => Math.max(max, v.rrfScore), 1e-10);
 
   return [...scores.values()]
     .sort((a, b) => b.rrfScore - a.rrfScore)
