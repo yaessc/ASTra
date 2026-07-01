@@ -6,7 +6,7 @@ import {
 import { intro, spinner, note, outro, text, select, isCancel } from '@clack/prompts';
 import pico from 'picocolors';
 import { resolve, join } from 'node:path';
-import { exec } from 'node:child_process';
+import { exec, spawn } from 'node:child_process';
 import { promisify } from 'node:util';
 import { createEmphasize, common } from 'emphasize';
 import { ProgressBarManager } from '../utils/progress.js';
@@ -77,7 +77,17 @@ async function openInEditor(filePath: string, line: number, rootDir: string): Pr
   const editor = process.env.EDITOR;
   if (editor) {
     try {
-      await execAsync(`"${editor}" "${fullPath}" +${line}`);
+      await new Promise<void>((resolve, reject) => {
+        const child = spawn(`"${editor}" "${fullPath}" +${line}`, [], {
+          stdio: 'inherit',
+          shell: true,
+        });
+        child.on('close', (code) => {
+          if (code === 0) resolve();
+          else reject(new Error(`Editor exited with code ${code}`));
+        });
+        child.on('error', reject);
+      });
       return;
     } catch {
       note(`Could not open with EDITOR="${editor}". File: ${fullPath}:${line}`, 'Open Failed');
