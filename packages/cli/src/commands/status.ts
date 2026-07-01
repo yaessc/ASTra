@@ -36,7 +36,7 @@ export async function statusCommand(options?: { dir?: string }): Promise<void> {
       `Collection:  ${pico.green(config.collectionName)}
 Total files:  ${pico.yellow(String(stats.totalFiles))}
 Total chunks: ${pico.yellow(String(stats.totalChunks))}
-${stats.lastIndexed ? `Last indexed: ${pico.dim(stats.lastIndexed)}\n` : ''}Vector size:  384 (Cosine)
+${stats.lastIndexed ? `Last indexed: ${pico.dim(stats.lastIndexed)}\n` : ''}Vector size:  ${stats.vectorSize !== null ? pico.green(String(stats.vectorSize)) : pico.dim('N/A')} (Cosine)
 Qdrant URL:   ${pico.dim(config.qdrantUrl)}
 Model:        ${pico.dim(config.modelId)}`,
       pico.cyan('Index Information'),

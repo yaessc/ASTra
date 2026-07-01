@@ -52,6 +52,7 @@ export interface IndexStats {
   totalChunks: number;
   lastIndexed: string | null;
   collectionSize: number;
+  vectorSize: number | null;
 }
 
 export interface IndexedFile {

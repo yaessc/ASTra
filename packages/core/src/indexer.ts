@@ -164,12 +164,17 @@ export async function getIndexStats(config: AstraConfig, rootDir?: string): Prom
       return await client.getCollection(config.collectionName);
     }, config);
     const count = info.points_count ?? 0;
+    const vectors = info.config?.params?.vectors;
+    const vectorSize = vectors && 'dense' in vectors
+      ? (vectors as Record<string, { size: number }>).dense.size
+      : null;
 
     return {
       totalFiles,
       totalChunks: count,
       lastIndexed,
       collectionSize: count,
+      vectorSize,
     };
   } catch (err) {
     if (err instanceof QdrantConnectionError) throw err;
@@ -178,6 +183,7 @@ export async function getIndexStats(config: AstraConfig, rootDir?: string): Prom
       totalChunks: 0,
       lastIndexed,
       collectionSize: 0,
+      vectorSize: null,
     };
   }
 }
