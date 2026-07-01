@@ -1,5 +1,5 @@
 import {
-  loadConfig, resetCollection, clearCache, getCacheDir,
+  loadConfig, resetCollection, clearCache, getCacheDir, closeCache,
   ConfigValidationError, QdrantConnectionError,
 } from '@astra/core';
 import { intro, spinner, note, outro, confirm, isCancel } from '@clack/prompts';
@@ -49,6 +49,8 @@ export async function resetCommand(options?: { dir?: string }): Promise<void> {
     } else {
       note('Could not reset the index. Is Qdrant running?', 'Error');
     }
+  } finally {
+    closeCache();
   }
 
   outro('Done');
