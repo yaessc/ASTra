@@ -48,7 +48,7 @@ export async function* embedBatch(
 
   for (let i = 0; i < chunks.length; i += batchSize) {
     const batchChunks = chunks.slice(i, i + batchSize);
-    const texts = batchChunks.map(c => formatCodeForEmbedding(c));
+    const texts = batchChunks.map(c => formatCodeForEmbedding(c, config));
     const output = await extractor!(texts, { pooling: 'mean', normalize: true });
     const dims = output.dims;
     const embeddingDim = dims ? dims[dims.length - 1] : 384;
@@ -61,7 +61,7 @@ export async function* embedBatch(
   }
 }
 
-export function formatCodeForEmbedding(chunk: CodeChunk): string {
+export function formatCodeForEmbedding(chunk: CodeChunk, config: AstraConfig): string {
   if (chunk.chunkType === 'metadata') {
     return chunk.content;
   }
@@ -72,9 +72,11 @@ export function formatCodeForEmbedding(chunk: CodeChunk): string {
     parts.push(`[${entity.type}] ${entity.signature}`);
   }
 
+  const maxChars = config.maxBodyChars;
+
   if (parts.length > 0) {
-    return parts.join('\n') + '\n\n' + truncateAtLineBoundary(chunk.content, 3000);
+    return parts.join('\n') + '\n\n' + truncateAtLineBoundary(chunk.content, maxChars);
   }
 
-  return truncateAtLineBoundary(chunk.content, 3000);
+  return truncateAtLineBoundary(chunk.content, maxChars);
 }
