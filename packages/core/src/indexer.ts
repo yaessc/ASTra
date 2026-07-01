@@ -56,14 +56,19 @@ export async function ensureCollection(config: AstraConfig): Promise<QdrantClien
   return client;
 }
 
-export async function indexChunks(chunks: CodeChunk[], config: AstraConfig, rootDir: string): Promise<void> {
-  const client = await ensureCollection(config);
+export async function indexChunks(
+  chunks: CodeChunk[],
+  config: AstraConfig,
+  rootDir: string,
+  client?: QdrantClient,
+): Promise<void> {
+  const qdrantClient = client ?? await ensureCollection(config);
   const cacheDir = getCacheDir(rootDir);
 
   const filePaths = [...new Set(chunks.map(c => c.filePath))];
   for (const fp of filePaths) {
     await safeQdrantCall(async () => {
-      await client.delete(config.collectionName, {
+      await qdrantClient.delete(config.collectionName, {
         wait: true,
         filter: {
           must: [{ key: 'filePath', match: { value: fp } }],
@@ -95,7 +100,7 @@ export async function indexChunks(chunks: CodeChunk[], config: AstraConfig, root
 
     if (upsertBatch.length >= 100) {
       await safeQdrantCall(async () => {
-        await client.upsert(config.collectionName, {
+        await qdrantClient.upsert(config.collectionName, {
           wait: true,
           points: upsertBatch,
         });
@@ -106,7 +111,7 @@ export async function indexChunks(chunks: CodeChunk[], config: AstraConfig, root
 
   if (upsertBatch.length > 0) {
     await safeQdrantCall(async () => {
-      await client.upsert(config.collectionName, {
+      await qdrantClient.upsert(config.collectionName, {
         wait: true,
         points: upsertBatch,
       });

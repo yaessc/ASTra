@@ -1,7 +1,7 @@
 import { resolve } from 'node:path';
 import {
   loadConfig, scanFiles, readFileWithHash, initLanguages, extractEntities,
-  chunkEntities, initEmbedder, indexChunks, setIndexedFile,
+  chunkEntities, initEmbedder, ensureCollection, indexChunks, setIndexedFile,
   getIndexedFile, getAllIndexedFilePaths,
   removeIndexedFile, removeIndexedChunks, deleteFileChunks,
   getCacheDir, closeCache, ConfigValidationError, QdrantConnectionError,
@@ -159,9 +159,11 @@ export async function indexCommand(dir: string = '.'): Promise<void> {
     let errorCount = 0;
     const startTime = Date.now();
 
+    const qdrantClient = await ensureCollection(config);
+
     for (const { file, chunks } of allChunks) {
       try {
-        await indexChunks(chunks, config, rootDir);
+        await indexChunks(chunks, config, rootDir, qdrantClient);
         setIndexedFile(cacheDir, {
           path: file.relativePath,
           mtime: file.mtime,
