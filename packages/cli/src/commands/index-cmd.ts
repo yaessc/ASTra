@@ -130,6 +130,7 @@ export async function indexCommand(dir: string = '.'): Promise<void> {
           maxBodyLines: config.maxBodyLines,
           maxBodyChars: config.maxBodyChars,
           linesPerBodyChunk: config.linesPerBodyChunk,
+          chunkOverlap: config.chunkOverlap,
         });
         allChunks.push({ file, chunks });
       } catch (err) {

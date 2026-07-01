@@ -71,4 +71,24 @@ describe('chunkEntities — metadata guard', () => {
     expect(chunks.find(c => c.chunkType === 'metadata')).toBeDefined();
     expect(chunks.find(c => c.chunkType === 'body')).toBeDefined();
   });
+
+  it('body chunks overlap when entity exceeds linesPerBodyChunk', () => {
+    const bodyLines = Array.from({ length: 15 }, (_, i) => `line ${i + 1}`);
+    const code = bodyLines.join('\n');
+    const chunks = chunkEntities(
+      [{
+        docComment: '', signature: '',
+        startLine: 1, endLine: 15, code,
+        filePath: 'a.ts', language: 'typescript',
+        type: 'function', name: 'fn',
+      }] as any,
+      'a.ts', '', 'typescript', {
+        maxChunkSize: 50, maxBodyLines: 5, maxBodyChars: 4000,
+        linesPerBodyChunk: 10, chunkOverlap: 2,
+      },
+    );
+    const bodyChunks = chunks.filter(c => c.chunkType === 'body');
+    expect(bodyChunks.length).toBeGreaterThanOrEqual(2);
+    expect(bodyChunks[0].endLine).toBeGreaterThanOrEqual(bodyChunks[1].startLine);
+  });
 });

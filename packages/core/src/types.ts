@@ -10,6 +10,7 @@ export interface AstraConfig {
   maxBodyLines: number;
   maxBodyChars: number;
   linesPerBodyChunk: number;
+  chunkOverlap: number;
 }
 
 export interface CodeEntity {

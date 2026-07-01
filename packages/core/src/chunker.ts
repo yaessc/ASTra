@@ -5,6 +5,7 @@ export interface ChunkOptions {
   maxBodyLines: number;
   maxBodyChars: number;
   linesPerBodyChunk: number;
+  chunkOverlap?: number;
 }
 
 const MIN_META_LENGTH = 10;
@@ -81,12 +82,15 @@ export function chunkEntities(
         chunkType: 'body',
       });
     } else {
-      for (let offset = 0; offset < totalLines; offset += options.linesPerBodyChunk) {
-        const chunkEnd = Math.min(offset + options.linesPerBodyChunk, totalLines);
+      const chunkSize = options.linesPerBodyChunk;
+      const overlap = options.chunkOverlap ?? Math.floor(chunkSize / 4);
+      const step = Math.max(1, chunkSize - overlap);
+      let seqIndex = 0;
+      for (let offset = 0; offset < totalLines; offset += step) {
+        const chunkEnd = Math.min(offset + chunkSize, totalLines);
         const chunkLines = bodyLines.slice(offset, chunkEnd);
         const chunkStartLine = entity.startLine + offset;
-        const chunkEndLine = Math.min(chunkStartLine + options.linesPerBodyChunk - 1, entity.endLine);
-        const seqIndex = Math.floor(offset / options.linesPerBodyChunk);
+        const chunkEndLine = Math.min(chunkStartLine + chunkSize - 1, entity.endLine);
 
         chunks.push({
           id: `${filePath}:${entity.startLine}-${entity.endLine}:${entity.name}:body:${seqIndex}`,
@@ -98,6 +102,7 @@ export function chunkEntities(
           language,
           chunkType: 'body',
         });
+        seqIndex++;
       }
     }
   }
