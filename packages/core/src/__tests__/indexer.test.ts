@@ -28,7 +28,7 @@ vi.mock('../embedder.js', () => ({
   embedBatch: vi.fn(),
 }));
 
-import { ensureCollection, indexChunks, deleteFileChunks, resetCollection } from '../indexer.js';
+import { ensureCollection, indexChunks, deleteFileChunks, deleteFileChunksBatch, resetCollection } from '../indexer.js';
 import { embedBatch } from '../embedder.js';
 
 const mockConfig: AstraConfig = {
@@ -194,6 +194,19 @@ describe('deleteFileChunks', () => {
     mockDelete.mockRejectedValue(new Error('Not found: Collection test_collection does not exist'));
 
     await expect(deleteFileChunks('src/a.ts', mockConfig)).resolves.toBeUndefined();
+  });
+});
+
+describe('deleteFileChunksBatch', () => {
+  it('suppresses "not found" errors', async () => {
+    mockDelete.mockRejectedValue(new Error('Not found: Collection test_collection does not exist'));
+
+    await expect(deleteFileChunksBatch(['src/a.ts', 'src/b.ts'], mockConfig)).resolves.toBeUndefined();
+  });
+
+  it('is a no-op for empty arrays', async () => {
+    await expect(deleteFileChunksBatch([], mockConfig)).resolves.toBeUndefined();
+    expect(mockDelete).not.toHaveBeenCalled();
   });
 });
 

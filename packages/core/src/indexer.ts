@@ -150,6 +150,26 @@ export async function deleteFileChunks(filePath: string, config: AstraConfig): P
   }
 }
 
+export async function deleteFileChunksBatch(filePaths: string[], config: AstraConfig): Promise<void> {
+  if (filePaths.length === 0) return;
+  const client = createClient(config);
+  try {
+    await safeQdrantCall(async () => {
+      await client.delete(config.collectionName, {
+        wait: true,
+        filter: {
+          must: [{ key: 'filePath', match: { any: filePaths } }],
+        },
+      });
+    }, config);
+  } catch (err) {
+    if (err instanceof QdrantConnectionError) {
+      if (err.message.toLowerCase().includes('not found')) return;
+      throw err;
+    }
+  }
+}
+
 export async function getIndexStats(config: AstraConfig, rootDir?: string): Promise<IndexStats> {
   const client = createClient(config);
 

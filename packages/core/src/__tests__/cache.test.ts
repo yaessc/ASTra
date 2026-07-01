@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import {
   getCacheDir, getIndexedFile, getAllIndexedFilePaths,
   setIndexedFile, setIndexedFiles, removeIndexedFile,
-  removeIndexedChunks, removeIndexedChunksBatch, storeChunkQdrantIds,
+  removeIndexedChunks, removeIndexedChunksBatch, removeIndexedFilesBatch, storeChunkQdrantIds,
   getMetadata, setMetadata, getLastIndexedMtime,
   clearCache, closeCache,
 } from '../cache.js';
@@ -114,6 +114,18 @@ describe('CRUD operations', () => {
         { chunkId: 'c2', filePath: 'b.ts', startLine: 1, endLine: 5, qdrantId: 'q2' },
       ])
     ).not.toThrow();
+  });
+
+  it('removeIndexedFilesBatch deletes only files matching the given paths', () => {
+    setIndexedFile(cacheDir, { path: 'a.ts', mtime: 100, hash: 'h1' });
+    setIndexedFile(cacheDir, { path: 'b.ts', mtime: 200, hash: 'h2' });
+    setIndexedFile(cacheDir, { path: 'c.ts', mtime: 300, hash: 'h3' });
+    removeIndexedFilesBatch(cacheDir, ['a.ts', 'c.ts']);
+    // Re-insert a.ts and c.ts without conflict
+    setIndexedFile(cacheDir, { path: 'a.ts', mtime: 100, hash: 'h1' });
+    setIndexedFile(cacheDir, { path: 'c.ts', mtime: 300, hash: 'h3' });
+    // b.ts still exists — re-insert also fine
+    setIndexedFile(cacheDir, { path: 'b.ts', mtime: 200, hash: 'h2' });
   });
 
   it('getLastIndexedMtime returns null on empty DB', () => {

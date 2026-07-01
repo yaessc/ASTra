@@ -10,13 +10,13 @@ export { extractEntities } from './entities.js';
 export { chunkEntities } from './chunker.js';
 export { initEmbedder, embedText, embedBatch, getEmbeddingDimension } from './embedder.js';
 export {
-  ensureCollection, indexChunks, deleteFileChunks,
+  ensureCollection, indexChunks, deleteFileChunks, deleteFileChunksBatch,
   getIndexStats, resetCollection,
 } from './indexer.js';
 export { searchCodebase, searchHybrid, type SearchMode } from './query.js';
 export {
   getCacheDir, clearCache, closeCache, setIndexedFile, setIndexedFiles, getIndexedFile,
-  removeIndexedFile, removeIndexedChunks, removeIndexedChunksBatch, getAllIndexedFilePaths,
+  removeIndexedFile, removeIndexedFilesBatch, removeIndexedChunks, removeIndexedChunksBatch, getAllIndexedFilePaths,
   getMetadata, setMetadata,
 } from './cache.js';
 export {

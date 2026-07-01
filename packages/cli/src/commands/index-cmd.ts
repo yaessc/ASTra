@@ -3,7 +3,7 @@ import {
   loadConfig, scanFiles, readFileWithHash, initLanguages, extractEntities,
   chunkEntities, initEmbedder, ensureCollection, indexChunks, setIndexedFile, setIndexedFiles,
   getIndexedFile, getAllIndexedFilePaths,
-  removeIndexedFile, removeIndexedChunks, deleteFileChunks,
+  removeIndexedFilesBatch, removeIndexedChunksBatch, deleteFileChunksBatch,
   getCacheDir, closeCache, ConfigValidationError, QdrantConnectionError,
   type ScannedFile, type IndexedFile, type CodeChunk,
 } from '@astra/core';
@@ -77,14 +77,12 @@ export async function indexCommand(dir: string = '.'): Promise<void> {
 
     if (staleFiles.length > 0) {
       s.start(`Removing ${staleFiles.length} deleted files from index...`);
-      for (const fp of staleFiles) {
-        try {
-          await deleteFileChunks(fp, config);
-          removeIndexedFile(cacheDir, fp);
-          removeIndexedChunks(cacheDir, fp);
-        } catch {
-          note(`Could not remove ${fp} from Qdrant. Will retry on next index.`, 'Warning');
-        }
+      try {
+        await deleteFileChunksBatch(staleFiles, config);
+        removeIndexedFilesBatch(cacheDir, staleFiles);
+        removeIndexedChunksBatch(cacheDir, staleFiles);
+      } catch {
+        note(`Could not remove ${staleFiles.length} files from Qdrant. Will retry on next index.`, 'Warning');
       }
       s.stop(`Removed ${staleFiles.length} deleted files`);
     }

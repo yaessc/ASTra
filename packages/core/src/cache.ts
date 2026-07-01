@@ -83,6 +83,18 @@ export function removeIndexedFile(cacheDir: string, filePath: string): void {
   d.prepare('DELETE FROM indexed_files WHERE path = ?').run(filePath);
 }
 
+export function removeIndexedFilesBatch(cacheDir: string, filePaths: string[]): void {
+  if (filePaths.length === 0) return;
+  const d = getDb(cacheDir);
+  const del = d.prepare('DELETE FROM indexed_files WHERE path = ?');
+  const tx = d.transaction((paths: string[]) => {
+    for (const fp of paths) {
+      del.run(fp);
+    }
+  });
+  tx(filePaths);
+}
+
 export function removeIndexedChunks(cacheDir: string, filePath: string): void {
   const d = getDb(cacheDir);
   d.prepare('DELETE FROM indexed_chunks WHERE file_path = ?').run(filePath);
