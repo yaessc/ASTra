@@ -153,13 +153,13 @@ export async function indexCommand(dir: string = '.'): Promise<void> {
       hideCursor: true,
     });
 
+    const qdrantClient = await ensureCollection(config);
+
     progressBar.start(totalChunks, 0, { speed: '0', eta_formatted: '--' });
 
     let processedFiles = 0;
     let errorCount = 0;
     const startTime = Date.now();
-
-    const qdrantClient = await ensureCollection(config);
 
     const allFileChunks = allChunks.flatMap(({ chunks }) => chunks);
 
