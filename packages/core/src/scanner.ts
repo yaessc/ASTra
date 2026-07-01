@@ -18,7 +18,7 @@ const ignore = createRequire(import.meta.url)('ignore') as {
   };
 };
 
-function findGitignore(dir: string): { dir: string; content: string }[] {
+export function findGitignore(dir: string): { dir: string; content: string }[] {
   const results: { dir: string; content: string }[] = [];
   let current = dir;
   while (true) {

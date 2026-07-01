@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtempSync, rmSync, writeFileSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { scanFiles, readFileWithHash } from '../scanner.js';
+import { scanFiles, readFileWithHash, findGitignore } from '../scanner.js';
 import type { AstraConfig } from '../types.js';
 
 // Access the unexported detectLanguage via the module internals.
@@ -159,5 +159,58 @@ describe('scanFiles', () => {
     expect(langMap['src/app.ts']).toBe('typescript');
     expect(langMap['src/app.tsx']).toBe('tsx');
     expect(langMap['src/app.js']).toBe('javascript');
+  });
+});
+
+describe('findGitignore', () => {
+  it('finds .gitignore in the target directory', () => {
+    writeFileSync(join(fixtureDir, '.gitignore'), 'node_modules\n');
+    const results = findGitignore(fixtureDir);
+    expect(results.length).toBe(1);
+    expect(results[0].dir).toBe(fixtureDir);
+    expect(results[0].content).toContain('node_modules');
+  });
+
+  it('walks up to parent directories to find .gitignore', () => {
+    const subDir = join(fixtureDir, 'a', 'b', 'c');
+    mkdirSync(subDir, { recursive: true });
+    writeFileSync(join(fixtureDir, '.gitignore'), 'dist\n');
+    const results = findGitignore(subDir);
+    expect(results.length).toBe(1);
+    expect(results[0].dir).toBe(fixtureDir);
+  });
+
+  it('stops walking at a .git/ boundary', () => {
+    const inner = join(fixtureDir, 'inner');
+    mkdirSync(inner);
+    writeFileSync(join(inner, '.gitignore'), 'inner-only\n');
+    mkdirSync(join(inner, '.git'));
+    writeFileSync(join(fixtureDir, '.gitignore'), 'root\n');
+    const results = findGitignore(inner);
+    expect(results.some(r => r.dir === fixtureDir)).toBe(false);
+    expect(results.some(r => r.dir === inner)).toBe(true);
+  });
+
+  it('returns empty array when no .gitignore exists', () => {
+    const results = findGitignore(fixtureDir);
+    expect(results).toEqual([]);
+  });
+
+  it('returns multiple entries when .gitignore exists at multiple levels', () => {
+    const subDir = join(fixtureDir, 'sub');
+    mkdirSync(subDir);
+    writeFileSync(join(fixtureDir, '.gitignore'), 'root\n');
+    writeFileSync(join(subDir, '.gitignore'), 'sub\n');
+    const results = findGitignore(subDir);
+    expect(results.length).toBe(2);
+    expect(results.some(r => r.dir === fixtureDir)).toBe(true);
+    expect(results.some(r => r.dir === subDir)).toBe(true);
+  });
+
+  it('stops at filesystem root when no .git/ marker exists', () => {
+    const deep = join(fixtureDir, 'x', 'y', 'z');
+    mkdirSync(deep, { recursive: true });
+    const results = findGitignore(deep);
+    expect(Array.isArray(results)).toBe(true);
   });
 });

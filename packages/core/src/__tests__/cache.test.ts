@@ -137,6 +137,30 @@ describe('CRUD operations', () => {
     setIndexedFile(cacheDir, { path: 'b.ts', mtime: 200, hash: 'h2' });
     expect(getLastIndexedMtime(cacheDir)).toBe(200);
   });
+
+  it('removeIndexedChunksBatch with empty array is a no-op', () => {
+    storeChunkQdrantIds(cacheDir, [
+      { chunkId: 'c1', filePath: 'a.ts', startLine: 1, endLine: 5, qdrantId: 'q1' },
+    ]);
+    expect(() => removeIndexedChunksBatch(cacheDir, [])).not.toThrow();
+  });
+
+  it('removeIndexedChunksBatch with non-existent paths does not throw', () => {
+    storeChunkQdrantIds(cacheDir, [
+      { chunkId: 'c1', filePath: 'a.ts', startLine: 1, endLine: 5, qdrantId: 'q1' },
+    ]);
+    expect(() => removeIndexedChunksBatch(cacheDir, ['nonexistent.ts'])).not.toThrow();
+  });
+
+  it('removeIndexedChunksBatch with single file path works', () => {
+    storeChunkQdrantIds(cacheDir, [
+      { chunkId: 'c1', filePath: 'a.ts', startLine: 1, endLine: 5, qdrantId: 'q1' },
+    ]);
+    removeIndexedChunksBatch(cacheDir, ['a.ts']);
+    storeChunkQdrantIds(cacheDir, [
+      { chunkId: 'c1', filePath: 'a.ts', startLine: 1, endLine: 5, qdrantId: 'q1' },
+    ]);
+  });
 });
 
 describe('metadata operations', () => {

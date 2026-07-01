@@ -4,7 +4,7 @@ import { createClient, safeQdrantCall } from './qdrant.js';
 
 export type SearchMode = 'vector' | 'keyword' | 'hybrid';
 
-function toQdrantPayload(payload: Record<string, unknown> | null | undefined): QdrantCodeChunkPayload {
+export function toQdrantPayload(payload: Record<string, unknown> | null | undefined): QdrantCodeChunkPayload {
   return {
     filePath: String(payload?.filePath ?? ''),
     startLine: Number(payload?.startLine ?? 0),
@@ -20,7 +20,7 @@ function toQdrantPayload(payload: Record<string, unknown> | null | undefined): Q
   };
 }
 
-function mapResult(r: {
+export function mapResult(r: {
   id: string | number;
   payload?: Record<string, unknown> | null;
   score?: number;
@@ -65,7 +65,7 @@ export async function searchCodebase(
   return response.points.map(mapResult);
 }
 
-async function keywordSearch(
+export async function keywordSearch(
   query: string,
   config: AstraConfig,
   limit: number,

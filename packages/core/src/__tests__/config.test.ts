@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { writeFileSync, unlinkSync, existsSync, mkdirSync, rmdirSync } from 'node:fs';
+import { writeFileSync, unlinkSync, existsSync, mkdirSync, rmdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { loadConfig } from '../config.js';
+import { loadConfig, writeDefaultConfig } from '../config.js';
 import { ConfigValidationError } from '../errors.js';
 
 describe('ConfigValidationError', () => {
@@ -41,5 +41,43 @@ describe('ConfigValidationError', () => {
   it('rejects chunkOverlap >= linesPerBodyChunk', () => {
     writeFileSync(configPath, JSON.stringify({ chunkOverlap: 100, linesPerBodyChunk: 50 }));
     expect(() => loadConfig(dir)).toThrowError('Config validation failed');
+  });
+});
+
+describe('writeDefaultConfig', () => {
+  const dir = join(tmpdir(), `astra-write-default-${Date.now()}`);
+
+  beforeEach(() => {
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+  });
+
+  afterEach(() => {
+    const configPath = join(dir, 'astra.config.json');
+    try { unlinkSync(configPath); } catch { /* cleanup */ }
+    try { rmdirSync(dir); } catch { /* cleanup */ }
+  });
+
+  it('writes a valid config file to disk', () => {
+    writeDefaultConfig(dir);
+    const configPath = join(dir, 'astra.config.json');
+    expect(existsSync(configPath)).toBe(true);
+    const content = readFileSync(configPath, 'utf-8');
+    expect(() => JSON.parse(content)).not.toThrow();
+  });
+
+  it('does not overwrite an existing config file', () => {
+    const configPath = join(dir, 'astra.config.json');
+    writeFileSync(configPath, '{"include":["custom/**/*.ts"],"exclude":[],"qdrantUrl":"http://localhost:6333","collectionName":"test","modelId":"test","maxChunkSize":50,"maxBodyLines":150,"maxBodyChars":4000,"linesPerBodyChunk":100,"chunkOverlap":25}', 'utf-8');
+    writeDefaultConfig(dir);
+    const content = readFileSync(configPath, 'utf-8');
+    const config = JSON.parse(content);
+    expect(config.include).toEqual(['custom/**/*.ts']);
+  });
+
+  it('written config can be loaded with loadConfig', () => {
+    writeDefaultConfig(dir);
+    const config = loadConfig(dir);
+    expect(config.include).toBeDefined();
+    expect(config.qdrantUrl).toBe('http://localhost:6333');
   });
 });
