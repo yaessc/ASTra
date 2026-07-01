@@ -2,7 +2,7 @@
 
 A CLI tool that indexes local codebases using **AST parsing** (not regex) and lets you ask **natural-language questions** to find code by file and line number.
 
-Built with `web-tree-sitter` for AST parsing, `Transformers.js` for local embeddings, and Qdrant for vector search.
+Built with `web-tree-sitter` for AST parsing, `@huggingface/transformers` v3 for local embeddings, and Qdrant for vector search (dense + BM25 sparse vectors).
 
 ## How it works
 
@@ -15,22 +15,22 @@ flowchart TD
     subgraph Parse["Parse & Extract"]
         B["Glob scanner"]
         C["web-tree-sitter<br/>(WASM AST parser)"]
-        D["Entity extractor<br/>(functions, classes, interfaces...)"]
-        E["Chunker<br/>(metadata + body chunks)"]
+        D["Entity extractor<br/>(visitor pattern,<br/>TypeScript/JavaScript)"]
+        E["Chunker<br/>(metadata + body chunks,<br/>uncovered code capture)"]
     end
 
     subgraph Embed["Embed"]
-        F["Transformers.js<br/>(all-MiniLM-L6-v2)"]
+        F["@huggingface/transformers<br/>(all-MiniLM-L6-v2)"]
     end
 
     subgraph Store["Vector DB"]
-        G[("Qdrant<br/>(Docker container)")]
+        G[("Qdrant<br/>(Docker)<br/>dense + BM25 sparse vectors")]
     end
 
     subgraph Query["Query"]
         H["Natural language query"]
-        I["Transformers.js<br/>(same model)"]
-        J["Vector / Keyword / Hybrid search<br/>(RRF fusion for hybrid)"]
+        I["@huggingface/transformers<br/>(same model)"]
+        J["Vector / BM25 keyword / Hybrid<br/>(RRF fusion, k=60)"]
     end
 
     subgraph UI["User Interface"]
@@ -71,8 +71,8 @@ astra query "auth middleware" -C /path/to/project     # from any directory
 |---------|-------------|
 | `astra init [path]` | Interactive wizard — prompts for directories, extensions, excludes; creates \`astra.config.json\` with ASCII banner |
 | `astra index [path]` | Index a directory: parses ASTs, extracts entities, generates chunks (metadata + body), embeds with Transformers.js, and stores in Qdrant. Shows progress bars for model download and indexing. Uses SQLite cache for incremental re-indexing. |
-| `astra query [query]` | Search with a natural language query. Omit for **interactive REPL** (`:help`, `:clear`, `:history`, `:limit N`, `:mode M`, `:exit`). Supports `--limit N`, `--mode vector\|keyword\|hybrid`, and `-C, --dir <path>` to specify project root from any directory. Results include code preview with syntax highlighting and an "Open in editor" menu. |
-| `astra status [-C, --dir <path>]` | Show index statistics — collection name, total chunks, vector size (384), Qdrant URL, model ID |
+| `astra query [query]` | Search with a natural language query. Omit for **interactive REPL** (`:help`, `:clear`, `:history`, `:limit N`, `:mode M`, `:exit`). Supports `-n, --limit N`, `-m, --mode vector\|keyword\|hybrid`, and `-C, --dir <path>` to specify project root from any directory. Results include code preview with syntax highlighting and an "Open in editor" menu. |
+| `astra status [-C, --dir <path>]` | Show index statistics — total files, total chunks, last indexed timestamp, vector size (384), Qdrant URL, model ID |
 | `astra reset [-C, --dir <path>]` | Clear the index and Qdrant collection. Prompts for confirmation before deleting. |
 
 ## What it extracts from code
@@ -89,7 +89,7 @@ astra query "auth middleware" -C /path/to/project     # from any directory
 - **Decorators** (NestJS/Angular decorators)
 - **JSDoc** comments attached to each entity
 
-Each entity is dual-chunked into a **metadata chunk** (signature + JSDoc) and a **body chunk** (implementation), indexed alongside semantic embeddings for richer retrieval.
+Each entity is dual-chunked into a **metadata chunk** (signature + JSDoc) and a **body chunk** (implementation), indexed alongside semantic embeddings for richer retrieval. Code between entities (e.g. top-level `app.use()` calls, startup logic) is also captured as separate body chunks so nothing is missed.
 
 ## Architecture
 
@@ -97,45 +97,65 @@ Each entity is dual-chunked into a **metadata chunk** (signature + JSDoc) and a 
 semantic-code-search/
 ├── packages/
 │   ├── core/              # AST parsing, chunking, embeddings, Qdrant indexing
+│   │   ├── package.json
+│   │   ├── tsconfig.json
+│   │   ├── vitest.config.ts
 │   │   └── src/
+│   │       ├── index.ts       # Barrel exports
 │   │       ├── config.ts      # astra.config.json loader (Zod-validated)
 │   │       ├── scanner.ts     # File discovery (glob + .gitignore)
 │   │       ├── languages.ts   # web-tree-sitter WASM grammar init
 │   │       ├── parser.ts      # Parse source into tree-sitter AST
 │   │       ├── entities.ts    # Walk AST → extract via visitor registry
 │   │       ├── visitors/      # Language-specific entity handlers
+│   │       │   ├── index.ts       # Module barrel
 │   │       │   ├── types.ts       # EntityHandler type
 │   │       │   ├── registry.ts    # Language → handler map
 │   │       │   ├── doc-comment.ts # JSDoc comment extraction
-│   │       │   └── ts-visitor.ts  # TypeScript/JavaScript handlers
+│   │       │   ├── ts-visitor.ts  # TypeScript/JavaScript handlers
+│   │       │   └── __tests__/
+│   │       │       └── ts-visitor.test.ts
 │   │       ├── chunker.ts     # Group entities into indexable chunks
-│   │       ├── embedder.ts    # Transformers.js (all-MiniLM-L6-v2)
+│   │       ├── embedder.ts    # @huggingface/transformers (all-MiniLM-L6-v2)
 │   │       ├── indexer.ts     # Qdrant upsert/delete/collection management
-│   │       ├── query.ts       # Vector / Keyword / Hybrid search
+│   │       ├── query.ts       # Vector / BM25 keyword / Hybrid search (RRF)
 │   │       ├── cache.ts       # SQLite cache for incremental indexing
+│   │       ├── qdrant.ts      # Qdrant client creation & safe-call helpers
 │   │       ├── errors.ts      # Custom error classes & helpers
-│   │       └── types.ts       # Shared TypeScript type definitions
+│   │       ├── types.ts       # Shared TypeScript type definitions
+│   │       └── __tests__/     # Vitest test suite
+│   │           ├── chunker.test.ts
+│   │           ├── config.test.ts
+│   │           ├── entities.test.ts
+│   │           └── rrf-merge.test.ts
 │   └── cli/               # CLI: init, index, query, status, reset
+│       ├── package.json
+│       ├── tsconfig.json
 │       └── src/
 │           ├── index.ts         # Commander entry point
 │           ├── commands/        # Command handlers
+│           │   ├── index-cmd.ts # astra index
+│           │   ├── init.ts      # astra init
+│           │   ├── query.ts     # astra query + REPL
+│           │   ├── reset.ts     # astra reset
+│           │   └── status.ts    # astra status
 │           └── utils/
 │               └── progress.ts  # Progress bar manager (cli-progress)
-├── docker-compose.yml     # Qdrant vector DB
+├── docker-compose.yml     # Qdrant vector DB (latest image)
 ├── tsconfig.base.json     # Shared TS config
 ├── turbo.json             # Turborepo task definitions
-└── astra.config.json        # User configuration
+└── astra.config.json      # User configuration
 ```
 
 ## Search modes
 
-Use `--mode` to control how queries are matched:
+Use `--mode` / `-m` to control how queries are matched:
 
 | Mode | Behavior |
 |------|----------|
-| `vector` | Cosine similarity on 384-dim embeddings (semantic meaning) |
-| `keyword` | Full-text keyword search (exact term matching) |
-| `hybrid` | RRF (Reciprocal Rank Fusion) — merges vector + keyword results |
+| `vector` | Cosine similarity on 384-dim dense embeddings (semantic meaning) — uses named vector `"dense"` |
+| `keyword` | Full-text BM25 keyword search via Qdrant server-side sparse vectors — uses named vector `"bm25"` |
+| `hybrid` | RRF (Reciprocal Rank Fusion, k=60) — merges vector + keyword results with a metadata relevance boost |
 
 Default is `hybrid`.
 
@@ -159,6 +179,8 @@ Default is `hybrid`.
 ```
 
 Validated at runtime with **Zod** — misconfigured values produce clear error messages.
+
+> `maxChunkSize` is a legacy fallback that only applies when a file has **zero AST entities** (e.g. plain config files). In that case, the file is split into fixed-size windows of this many lines. When entities are present, each entity produces its own body chunk(s) split at 150 lines / 4000 chars, and code between entities is also captured.
 
 ## Interactive REPL
 
@@ -185,10 +207,10 @@ Running `astra query` without arguments starts a REPL:
 | Component | Technology |
 |-----------|-----------|
 | AST Parser | `web-tree-sitter` (WASM, TypeScript/JavaScript) |
-| Embeddings | `Xenova/all-MiniLM-L6-v2` via Transformers.js |
-| Vector DB | Qdrant (Docker), Cosine distance, 384-dim |
-| Search modes | Vector + Keyword + Hybrid (RRF fusion) |
-| Cache | SQLite via `better-sqlite3` |
+| Embeddings | `Xenova/all-MiniLM-L6-v2` via `@huggingface/transformers` v3 |
+| Vector DB | Qdrant (Docker), Cosine distance, 384-dim dense + BM25 sparse vectors |
+| Search modes | Vector (dense) + BM25 keyword (sparse) + Hybrid (RRF fusion, k=60) |
+| Cache | SQLite via `better-sqlite3` (per-project, `.astra/cache/`) |
 | Config validation | Zod |
 | Progress bars | `cli-progress` |
 | Syntax highlighting | `emphasize` |
