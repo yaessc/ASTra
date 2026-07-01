@@ -8,12 +8,14 @@ interface FeatureExtractor {
 
 let extractor: FeatureExtractor | null = null;
 let loadedModelId: string | null = null;
+let cachedDimension: number | null = null;
 
 export async function initEmbedder(
   config: AstraConfig,
   onProgress?: (progress: any) => void,
 ): Promise<void> {
   if (extractor && loadedModelId === config.modelId) return;
+  cachedDimension = null;
   try {
     const { pipeline } = await import('@huggingface/transformers');
     extractor = await pipeline('feature-extraction', config.modelId, {
@@ -26,10 +28,12 @@ export async function initEmbedder(
 }
 
 export async function getEmbeddingDimension(config: AstraConfig): Promise<number> {
+  if (cachedDimension !== null) return cachedDimension;
   if (!extractor) await initEmbedder(config);
   const result = await extractor!('test', { pooling: 'mean', normalize: true });
   const dims = result.dims;
-  return dims ? dims[dims.length - 1] : 384;
+  cachedDimension = dims ? dims[dims.length - 1] : 384;
+  return cachedDimension;
 }
 
 export async function embedText(text: string, config: AstraConfig): Promise<number[]> {
