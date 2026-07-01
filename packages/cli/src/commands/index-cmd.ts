@@ -102,7 +102,10 @@ export async function indexCommand(dir: string = '.'): Promise<void> {
       const cached = getIndexedFile(cacheDir, f.relativePath);
       if (cached && cached.mtime === f.mtime) continue;
       const { content, hash } = readFileWithHash(f.path);
-      if (cached && cached.hash === hash) continue;
+      if (cached && cached.hash === hash) {
+        setIndexedFile(cacheDir, { path: f.relativePath, mtime: f.mtime, hash });
+        continue;
+      }
       changedFiles.push({ ...f, content, hash });
     }
 
