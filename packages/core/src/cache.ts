@@ -17,6 +17,8 @@ function getDb(cacheDir: string): Database.Database {
   }
 
   const conn = new Database(dbPath);
+  conn.exec('PRAGMA journal_mode = WAL;');
+  conn.exec('PRAGMA synchronous = NORMAL;');
   conn.exec(`
     CREATE TABLE IF NOT EXISTS indexed_files (
       path TEXT PRIMARY KEY,
