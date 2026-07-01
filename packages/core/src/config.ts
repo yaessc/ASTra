@@ -31,6 +31,12 @@ export function loadConfig(dir?: string): AstraConfig {
     const result = AstraConfigSchema.parse(user);
     return result as AstraConfig;
   } catch (err) {
+    if (err instanceof SyntaxError) {
+      throw new ConfigValidationError([{
+        path: 'astra.config.json',
+        message: `Invalid JSON: ${err.message}`,
+      }]);
+    }
     if (err instanceof z.ZodError) {
       const issues = err.issues.map(i => ({
         path: i.path.join('.'),

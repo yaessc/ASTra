@@ -3,6 +3,7 @@ import { writeFileSync, unlinkSync, existsSync, mkdirSync, rmdirSync } from 'nod
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { loadConfig } from '../config.js';
+import { ConfigValidationError } from '../errors.js';
 
 describe('ConfigValidationError', () => {
   const dir = join(tmpdir(), `astra-test-${Date.now()}`);
@@ -30,5 +31,10 @@ describe('ConfigValidationError', () => {
       expect(err.issues).toBeDefined();
       expect(err.issues.some((i: any) => i.path.includes('maxChunkSize'))).toBe(true);
     }
+  });
+
+  it('throws ConfigValidationError when JSON is malformed', () => {
+    writeFileSync(configPath, '{ invalid json }');
+    expect(() => loadConfig(dir)).toThrow(ConfigValidationError);
   });
 });
