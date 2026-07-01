@@ -6,7 +6,20 @@ import type Parser from 'web-tree-sitter';
 
 type SyntaxNode = Parser.SyntaxNode;
 
-function firstLine(node: SyntaxNode, source: string): string {
+function getSignature(node: SyntaxNode, source: string): string {
+  const body = node.childForFieldName('body');
+  if (body) {
+    return source.slice(node.startIndex, body.startIndex).trim();
+  }
+  if (node.type === 'variable_declarator') {
+    const value = node.childForFieldName('value');
+    if (value) {
+      const valueBody = value.childForFieldName('body');
+      if (valueBody) {
+        return source.slice(node.startIndex, valueBody.startIndex).trim();
+      }
+    }
+  }
   return getNodeText(node, source).split('\n')[0].trim();
 }
 
@@ -58,7 +71,7 @@ function namedEntity(type: CodeEntity['type']): EntityHandler {
       filePath,
       startLine: range.startLine,
       endLine: range.endLine,
-      signature: firstLine(node, source),
+      signature: getSignature(node, source),
       code: getNodeText(node, source),
       docComment: findDocComment(node, source),
       language,
@@ -81,7 +94,7 @@ export const tsHandlers: Record<string, EntityHandler> = {
       filePath,
       startLine: range.startLine,
       endLine: range.endLine,
-      signature: firstLine(node, source),
+      signature: getSignature(node, source),
       code: getNodeText(node, source),
       docComment: findDocComment(node, source),
       language,
@@ -138,7 +151,7 @@ export const tsHandlers: Record<string, EntityHandler> = {
         filePath,
         startLine: range.startLine,
         endLine: range.endLine,
-        signature: firstLine(node, source),
+        signature: getSignature(node, source),
         code: isFunc && valueNode ? getNodeText(valueNode, source) : getNodeText(node, source),
         docComment,
         language,
@@ -155,7 +168,7 @@ export const tsHandlers: Record<string, EntityHandler> = {
         filePath,
         startLine: range.startLine,
         endLine: range.endLine,
-        signature: firstLine(node, source),
+        signature: getSignature(node, source),
         code: getNodeText(valueNode, source),
         docComment,
         language,
@@ -169,7 +182,7 @@ export const tsHandlers: Record<string, EntityHandler> = {
       filePath,
       startLine: range.startLine,
       endLine: range.endLine,
-      signature: firstLine(node, source),
+      signature: getSignature(node, source),
       code: getNodeText(node, source),
       docComment,
       language,
@@ -186,7 +199,7 @@ export const tsHandlers: Record<string, EntityHandler> = {
       filePath,
       startLine: range.startLine,
       endLine: range.endLine,
-      signature: firstLine(node, source),
+      signature: getSignature(node, source),
       code: getNodeText(node, source),
       docComment: '',
       language,
@@ -196,7 +209,7 @@ export const tsHandlers: Record<string, EntityHandler> = {
   export_statement(node, source, filePath, language) {
     if (!node.childForFieldName('declaration')) {
       const sourceNode = node.childForFieldName('source');
-      const name = sourceNode ? `* from ${getNodeText(sourceNode, source)}` : firstLine(node, source);
+      const name = sourceNode ? `* from ${getNodeText(sourceNode, source)}` : getSignature(node, source);
       const range = getNodeRange(node);
       return {
         type: 'export',
@@ -204,7 +217,7 @@ export const tsHandlers: Record<string, EntityHandler> = {
         filePath,
         startLine: range.startLine,
         endLine: range.endLine,
-        signature: firstLine(node, source),
+        signature: getSignature(node, source),
         code: getNodeText(node, source),
         docComment: '',
         language,

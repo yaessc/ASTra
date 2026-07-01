@@ -149,3 +149,26 @@ describe('ts-visitor handlers', () => {
     });
   });
 });
+
+describe('multi-line signatures', () => {
+  it('function signature spans full declaration header with newlines preserved', () => {
+    const source = 'function foo(\n  a: string,\n  b: number\n): Promise<Result> {\n  return x;\n}';
+    const node = firstNodeOfType(source, 'function_declaration');
+    const entity = tsHandlers.function_declaration(node, source, 'a.ts', 'typescript') as any;
+    expect(entity?.signature).toBe('function foo(\n  a: string,\n  b: number\n): Promise<Result>');
+  });
+
+  it('class signature includes heritage clauses', () => {
+    const source = 'class Foo extends Bar implements Baz { prop: string; }';
+    const node = firstNodeOfType(source, 'class_declaration');
+    const entity = tsHandlers.class_declaration(node, source, 'a.ts', 'typescript') as any;
+    expect(entity?.signature).toBe('class Foo extends Bar implements Baz');
+  });
+
+  it('arrow function assignment signature omits body', () => {
+    const source = 'const fn = (a: string, b: number): void => { return; };';
+    const node = firstNodeOfType(source, 'variable_declarator');
+    const entity = tsHandlers.variable_declarator(node, source, 'a.ts', 'typescript') as any;
+    expect(entity?.signature).toBe('fn = (a: string, b: number): void =>');
+  });
+});
