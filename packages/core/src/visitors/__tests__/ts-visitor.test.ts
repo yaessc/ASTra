@@ -202,3 +202,37 @@ describe('destructuring with rename and default', () => {
     expect(arr[1].name).toBe('c');
   });
 });
+
+describe('scope filtering for variables', () => {
+  it('module-level const variable is indexed', () => {
+    const source = 'const x = 1;';
+    const node = firstNodeOfType(source, 'variable_declarator');
+    const entity = tsHandlers.variable_declarator(node, source, 'a.ts', 'typescript') as any;
+    expect(entity).not.toBeNull();
+    expect(entity.type).toBe('variable');
+    expect(entity.name).toBe('x');
+  });
+
+  it('const inside function body is skipped', () => {
+    const source = 'function f() { const x = 1; }';
+    const node = firstNodeOfType(source, 'variable_declarator');
+    const entity = tsHandlers.variable_declarator(node, source, 'a.ts', 'typescript');
+    expect(entity).toBeNull();
+  });
+
+  it('for loop variable is skipped', () => {
+    const source = 'for (let i = 0; i < n; i++) {}';
+    const node = firstNodeOfType(source, 'variable_declarator');
+    const entity = tsHandlers.variable_declarator(node, source, 'a.ts', 'typescript');
+    expect(entity).toBeNull();
+  });
+
+  it('module-level arrow function assignment is still indexed as function', () => {
+    const source = 'const fn = () => { return 1; };';
+    const node = firstNodeOfType(source, 'variable_declarator');
+    const entity = tsHandlers.variable_declarator(node, source, 'a.ts', 'typescript') as any;
+    expect(entity).not.toBeNull();
+    expect(entity.type).toBe('function');
+    expect(entity.name).toBe('fn');
+  });
+});

@@ -23,6 +23,32 @@ function getSignature(node: SyntaxNode, source: string): string {
   return getNodeText(node, source).split('\n')[0].trim();
 }
 
+function isTopLevel(node: SyntaxNode): boolean {
+  let current: SyntaxNode | null = node.parent;
+  while (current) {
+    if (current.type === 'program') return true;
+    if (
+      current.type === 'function_declaration' ||
+      current.type === 'method_definition' ||
+      current.type === 'arrow_function' ||
+      current.type === 'function' ||
+      current.type === 'for_statement' ||
+      current.type === 'for_in_statement' ||
+      current.type === 'for_of_statement' ||
+      current.type === 'while_statement' ||
+      current.type === 'do_statement' ||
+      current.type === 'if_statement' ||
+      current.type === 'switch_statement' ||
+      current.type === 'try_statement' ||
+      current.type === 'catch_clause' ||
+      current.type === 'with_statement' ||
+      current.type === 'class_body'
+    ) return false;
+    current = current.parent;
+  }
+  return true;
+}
+
 function extractPatternBindings(patternNode: SyntaxNode, source: string): string[] {
   const names: string[] = [];
   for (let i = 0; i < patternNode.namedChildCount; i++) {
@@ -133,6 +159,7 @@ export const tsHandlers: Record<string, EntityHandler> = {
     const nameNode = node.childForFieldName('name');
     const valueNode = node.childForFieldName('value');
     if (!nameNode) return null;
+    if (!isTopLevel(node)) return null;
 
     let docNode: SyntaxNode = node;
     let p = node.parent;
