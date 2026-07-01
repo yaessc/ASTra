@@ -19,7 +19,7 @@ const LANG_MAP: Record<string, string> = {
 };
 
 const queryHistory: string[] = [];
-const KNOWN_REPL = /^:(?:help|clear|history|exit|limit|mode)\b/;
+const KNOWN_REPL = /^:/;
 
 function formatCode(code: string, language: string): string {
   try {
