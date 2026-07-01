@@ -2,7 +2,7 @@ export type {
   AstraConfig, CodeEntity, CodeChunk, SearchResult, IndexStats,
   SupportedLanguage, IndexedFile, ScanResult, ScannedFile,
 } from './types.js';
-export { loadConfig, writeDefaultConfig } from './config.js';
+export { loadConfig, writeDefaultConfig, AstraConfigSchema } from './config.js';
 export { scanFiles, readFileWithHash } from './scanner.js';
 export { initLanguages } from './languages.js';
 export { parseFile } from './parser.js';

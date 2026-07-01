@@ -1,8 +1,8 @@
 import { writeFileSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { intro, note, outro, text, multiselect, confirm, isCancel } from '@clack/prompts';
 import pico from 'picocolors';
-import { resolve } from 'node:path';
+import { AstraConfigSchema } from '@astra/core';
 
 interface InitAnswers {
   directories: string[];
@@ -38,14 +38,8 @@ function generateConfig(answers: InitAnswers): string {
   }
   exclude.push(...answers.extraExcludes);
 
-  const config = {
-    include,
-    exclude,
-    qdrantUrl: 'http://localhost:6333',
-    collectionName: 'code_chunks',
-    modelId: 'Xenova/all-MiniLM-L6-v2',
-    maxChunkSize: 50,
-  };
+  const defaults = AstraConfigSchema.parse({});
+  const config = { ...defaults, include, exclude };
 
   return JSON.stringify(config, null, 2);
 }

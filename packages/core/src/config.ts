@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { ConfigValidationError } from './errors.js';
 import type { AstraConfig } from './types.js';
 
-const AstraConfigSchema = z.object({
+export const AstraConfigSchema = z.object({
   include: z.array(z.string()).default(['src/**/*.ts', 'src/**/*.tsx', 'src/**/*.js', 'src/**/*.jsx']),
   exclude: z.array(z.string()).default(['**/node_modules/**', '**/dist/**', '**/build/**', '**/*.test.ts', '**/*.spec.ts', '**/*.d.ts']),
   qdrantUrl: z.string().url('Must be a valid URL starting with http:// or https://').default('http://localhost:6333'),
