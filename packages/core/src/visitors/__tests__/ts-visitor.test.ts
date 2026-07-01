@@ -12,9 +12,8 @@ function firstNodeOfType(source: string, type: string) {
   const results: any[] = [];
   function walk(n: any) {
     if (n.type === type) results.push(n);
-    for (let i = 0; i < n.namedChildCount; i++) {
-      const c = n.namedChild(i);
-      if (c) walk(c);
+    for (const c of n.namedChildren) {
+      walk(c);
     }
   }
   walk(tree.rootNode);

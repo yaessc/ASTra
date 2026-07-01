@@ -12,14 +12,13 @@ function getSignature(node: SyntaxNode, source: string): string {
     return source.slice(node.startIndex, body.startIndex).trim();
   }
 
-  for (let i = 0; i < node.namedChildCount; i++) {
-    const child = node.namedChild(i);
-    if (child && (
+  for (const child of node.namedChildren) {
+    if (
       child.type === 'class_body' ||
       child.type === 'interface_body' ||
       child.type === 'enum_body' ||
       child.type === 'object_type'
-    )) {
+    ) {
       return source.slice(node.startIndex, child.startIndex).trim();
     }
   }
@@ -65,9 +64,7 @@ function isTopLevel(node: SyntaxNode): boolean {
 
 function extractPatternBindings(patternNode: SyntaxNode, source: string): string[] {
   const names: string[] = [];
-  for (let i = 0; i < patternNode.namedChildCount; i++) {
-    const child = patternNode.namedChild(i);
-    if (!child) continue;
+  for (const child of patternNode.namedChildren) {
     const t = child.type;
     if (t === 'shorthand_property_identifier_pattern' || t === 'identifier') {
       names.push(getNodeText(child, source));

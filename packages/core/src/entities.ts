@@ -20,9 +20,8 @@ export function extractEntities(source: string, filePath: string, language: Supp
           else entities.push(result);
         }
       }
-      for (let i = 0; i < n.namedChildCount; i++) {
-        const child = n.namedChild(i);
-        if (child) walk(child);
+      for (const child of n.namedChildren) {
+        walk(child);
       }
     }
 
