@@ -21,7 +21,7 @@ const ignore = createRequire(import.meta.url)('ignore') as {
 function findGitignore(dir: string): { dir: string; content: string }[] {
   const results: { dir: string; content: string }[] = [];
   let current = dir;
-  for (let i = 0; i < 10; i++) {
+  while (true) {
     try {
       const content = readFileSync(join(current, '.gitignore'), 'utf-8');
       results.push({ dir: current, content });
