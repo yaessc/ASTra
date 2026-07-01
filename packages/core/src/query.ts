@@ -100,14 +100,16 @@ export function rrfMerge(
     }
   }
 
-  const maxScore = [...scores.values()].reduce((max, v) => Math.max(max, v.rrfScore), 1e-10);
+  const listCount = (vectorResults.length > 0 ? 1 : 0) + (keywordResults.length > 0 ? 1 : 0);
+  if (listCount === 0) return [];
+  const maxRrf = listCount / k;
 
   return [...scores.values()]
     .sort((a, b) => b.rrfScore - a.rrfScore)
     .slice(0, limit)
     .map(entry => ({
       ...entry.result,
-      score: entry.rrfScore / maxScore,
+      score: Math.min(entry.rrfScore / maxRrf, 1.0),
     }));
 }
 
