@@ -147,21 +147,3 @@ export function chunkEntities(
 
   return chunks;
 }
-
-export function computeChunkId(
-  filePath: string,
-  startLine: number,
-  endLine: number,
-  name?: string,
-  chunkType?: 'metadata' | 'body',
-  seqIndex?: number,
-): string {
-  let id = `${filePath}:${startLine}-${endLine}`;
-  if (name) id += `:${name}`;
-  if (chunkType === 'metadata') {
-    id += ':meta';
-  } else if (chunkType === 'body') {
-    id += seqIndex !== undefined ? `:body:${seqIndex}` : ':body';
-  }
-  return id;
-}

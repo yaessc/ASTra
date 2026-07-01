@@ -24,12 +24,3 @@ export function getNodeRange(node: Parser.SyntaxNode): { startLine: number; endL
     endLine: node.endPosition.row + 1,
   };
 }
-
-export function findParent(node: Parser.SyntaxNode | null, type: string): Parser.SyntaxNode | null {
-  let current = node?.parent ?? null;
-  while (current) {
-    if (current.type === type) return current;
-    current = current.parent;
-  }
-  return null;
-}
