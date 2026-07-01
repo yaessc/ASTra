@@ -6,12 +6,10 @@ import {
 import { intro, spinner, note, outro, text, select, isCancel } from '@clack/prompts';
 import pico from 'picocolors';
 import { resolve, join } from 'node:path';
-import { exec, spawn } from 'node:child_process';
-import { promisify } from 'node:util';
+import { spawn } from 'node:child_process';
 import { createEmphasize, common } from 'emphasize';
 import { ProgressBarManager } from '../utils/progress.js';
 
-const execAsync = promisify(exec);
 const emph = createEmphasize(common);
 
 const LANG_MAP: Record<string, string> = {
@@ -66,10 +64,21 @@ function displayResult(r: { filePath: string; startLine: number; endLine: number
   console.log(` ${' '.repeat(lineNumWidth)} ${pico.dim('└' + '─'.repeat(50))}`);
 }
 
+function spawnAsync(cmd: string, args: string[]): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    const child = spawn(cmd, args, { stdio: 'inherit', shell: false });
+    child.on('close', (code) => {
+      if (code === 0) resolve();
+      else reject(new Error(`"${cmd}" exited with code ${code}`));
+    });
+    child.on('error', reject);
+  });
+}
+
 async function openInEditor(filePath: string, line: number, rootDir: string): Promise<void> {
   const fullPath = join(rootDir, filePath);
   try {
-    await execAsync(`code -g "${fullPath}:${line}"`);
+    await spawnAsync('code', ['-g', `${fullPath}:${line}`]);
     return;
   } catch {
     // VSCode not available — fall through
@@ -78,17 +87,8 @@ async function openInEditor(filePath: string, line: number, rootDir: string): Pr
   const editor = process.env.EDITOR;
   if (editor) {
     try {
-      await new Promise<void>((resolve, reject) => {
-        const child = spawn(`"${editor}" "${fullPath}" +${line}`, [], {
-          stdio: 'inherit',
-          shell: true,
-        });
-        child.on('close', (code) => {
-          if (code === 0) resolve();
-          else reject(new Error(`Editor exited with code ${code}`));
-        });
-        child.on('error', reject);
-      });
+      const parts = editor.trim().split(/\s+/);
+      await spawnAsync(parts[0], [...parts.slice(1), fullPath, `+${line}`]);
       return;
     } catch {
       note(`Could not open with EDITOR="${editor}". File: ${fullPath}:${line}`, 'Open Failed');
@@ -98,11 +98,11 @@ async function openInEditor(filePath: string, line: number, rootDir: string): Pr
 
   try {
     if (process.platform === 'win32') {
-      await execAsync(`start "" "${fullPath}"`);
+      await spawnAsync('cmd', ['/c', 'start', '', fullPath]);
     } else if (process.platform === 'darwin') {
-      await execAsync(`open "${fullPath}"`);
+      await spawnAsync('open', [fullPath]);
     } else {
-      await execAsync(`xdg-open "${fullPath}"`);
+      await spawnAsync('xdg-open', [fullPath]);
     }
   } catch {
     note(`Could not open editor. File: ${fullPath}:${line}`, 'Open Failed');
