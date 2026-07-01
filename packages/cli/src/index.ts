@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import pico from 'picocolors';
 import { Command } from 'commander';
 import { initCommand } from './commands/init.js';
 import { indexCommand } from './commands/index-cmd.js';
@@ -46,4 +47,8 @@ program
   .option('-C, --dir <path>', 'Project root directory', '.')
   .action(resetCommand);
 
-program.parse();
+program.parseAsync().catch((err: unknown) => {
+  const message = err instanceof Error ? err.message : String(err);
+  console.error(`\n  ${pico.red('Error:')} ${message}\n`);
+  process.exit(1);
+});
