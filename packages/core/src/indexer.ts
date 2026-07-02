@@ -6,7 +6,7 @@ import { QdrantConnectionError } from './errors.js';
 import { createClient, safeQdrantCall } from './qdrant.js';
 import { createHash } from 'node:crypto';
 
-function chunkToPayload(chunk: CodeChunk) {
+function chunkToPayload(chunk: CodeChunk, maxBodyChars: number) {
   const entities = chunk.entities.map(({ code: _code, ...rest }) => rest);
   return {
     filePath: chunk.filePath,
@@ -17,7 +17,7 @@ function chunkToPayload(chunk: CodeChunk) {
     firstEntitySignature: chunk.entities[0]?.signature || '',
     entities,
     entitiesJson: JSON.stringify(entities),
-    code: chunk.content.slice(0, 4000),
+    code: chunk.content.slice(0, maxBodyChars),
     language: chunk.language,
     chunkType: chunk.chunkType,
   };
@@ -112,7 +112,7 @@ export async function indexChunks(
         "dense": embedding,
         "bm25": { text: chunk.content, model: "qdrant/bm25" },
       },
-      payload: chunkToPayload(chunk),
+      payload: chunkToPayload(chunk, config.maxBodyChars),
     });
 
     if (upsertBatch.length >= 100) {
