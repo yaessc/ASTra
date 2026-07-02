@@ -84,6 +84,8 @@ export async function keywordSearch(
   return response.points.map(mapResult);
 }
 
+const METADATA_BOOST = 1.2;
+
 export function rrfMerge(
   vectorResults: SearchResult[],
   keywordResults: SearchResult[],
@@ -95,7 +97,7 @@ export function rrfMerge(
   for (const list of [vectorResults, keywordResults]) {
     for (let rank = 0; rank < list.length; rank++) {
       const r = list[rank];
-      const boost = r.chunkType === 'metadata' ? 1.2 : 1.0;
+      const boost = r.chunkType === 'metadata' ? METADATA_BOOST : 1.0;
       const contribution = boost / (k + rank);
 
       const existing = scores.get(r.chunkId);
