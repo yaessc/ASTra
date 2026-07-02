@@ -14,10 +14,12 @@ export async function initLanguages(): Promise<void> {
 
   const tsGrammarPath = require.resolve('tree-sitter-typescript/tree-sitter-typescript.wasm');
   const tsxGrammarPath = require.resolve('tree-sitter-typescript/tree-sitter-tsx.wasm');
+  const jsGrammarPath = require.resolve('tree-sitter-javascript/tree-sitter-javascript.wasm');
 
-  const [tsLang, tsxLang] = await Promise.all([
+  const [tsLang, tsxLang, jsLang] = await Promise.all([
     Parser.Language.load(tsGrammarPath),
     Parser.Language.load(tsxGrammarPath),
+    Parser.Language.load(jsGrammarPath),
   ]);
 
   const tsParser = new Parser();
@@ -29,7 +31,7 @@ export async function initLanguages(): Promise<void> {
   parsers.set('tsx', tsxParser);
 
   const jsParser = new Parser();
-  jsParser.setLanguage(tsxLang);
+  jsParser.setLanguage(jsLang);
   parsers.set('javascript', jsParser);
 
   initialized = true;
