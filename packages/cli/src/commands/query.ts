@@ -64,6 +64,32 @@ function displayResult(r: SearchResult, index: number): void {
   console.log(` ${' '.repeat(lineNumWidth)} ${pico.dim('└' + '─'.repeat(50))}`);
 }
 
+function parseEditorCmd(s: string): { cmd: string; args: string[] } {
+  const args: string[] = [];
+  let cur = '';
+  let inSingle = false;
+  let inDouble = false;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (inSingle) {
+      if (c === "'") inSingle = false;
+      else cur += c;
+    } else if (inDouble) {
+      if (c === '"') inDouble = false;
+      else if (c === '\\' && (s[i + 1] === '"' || s[i + 1] === '\\')) cur += s[++i];
+      else cur += c;
+    } else if (c === "'") inSingle = true;
+    else if (c === '"') inDouble = true;
+    else if (c === ' ' || c === '\t') {
+      if (cur) { args.push(cur); cur = ''; }
+    }
+    else if (c === '\\' && (s[i + 1] === ' ' || s[i + 1] === '"' || s[i + 1] === "'" || s[i + 1] === '\\')) cur += s[++i];
+    else cur += c;
+  }
+  if (cur) args.push(cur);
+  return { cmd: args[0] ?? '', args: args.slice(1) };
+}
+
 function spawnAsync(cmd: string, args: string[]): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     const child = spawn(cmd, args, { stdio: 'inherit', shell: false });
@@ -87,8 +113,8 @@ async function openInEditor(filePath: string, line: number, rootDir: string): Pr
   const editor = process.env.EDITOR;
   if (editor) {
     try {
-      const parts = editor.trim().split(/\s+/);
-      await spawnAsync(parts[0], [...parts.slice(1), fullPath, `+${line}`]);
+      const { cmd, args } = parseEditorCmd(editor);
+      await spawnAsync(cmd, [...args, fullPath, `+${line}`]);
       return;
     } catch {
       note(`Could not open with EDITOR="${editor}". File: ${fullPath}:${line}`, 'Open Failed');
