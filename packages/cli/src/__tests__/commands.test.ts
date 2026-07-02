@@ -80,6 +80,7 @@ vi.mock('@astra/core', () => ({
   deleteFileChunksBatch: vi.fn(),
   getCacheDir: vi.fn(() => '/tmp/cache'),
   closeCache: vi.fn(),
+  wasCacheReset: vi.fn(() => false),
   getEmbeddingDimension: vi.fn(),
 }));
 

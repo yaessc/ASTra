@@ -6,6 +6,7 @@ import type { IndexedFile } from './types.js';
 const SCHEMA_VERSION = '4';
 
 const databases = new Map<string, Database.Database>();
+const resetFlags = new Map<string, boolean>();
 
 function getDb(cacheDir: string): Database.Database {
   const dbPath = join(cacheDir, 'cache.db');
@@ -43,6 +44,7 @@ function getDb(cacheDir: string): Database.Database {
   if (!row || row.value !== SCHEMA_VERSION) {
     conn.exec('DELETE FROM indexed_files; DELETE FROM indexed_chunks; DELETE FROM metadata;');
     conn.prepare('INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)').run('schema_version', SCHEMA_VERSION);
+    resetFlags.set(cacheDir, true);
   }
 
   databases.set(dbPath, conn);
@@ -161,4 +163,9 @@ export function closeCache(): void {
     conn.close();
   }
   databases.clear();
+}
+
+export function wasCacheReset(cacheDir: string): boolean {
+  getDb(cacheDir);
+  return resetFlags.get(cacheDir) ?? false;
 }

@@ -4,7 +4,7 @@ import {
   chunkEntities, initEmbedder, ensureCollection, indexChunks, setIndexedFile, setIndexedFiles,
   getIndexedFile, getAllIndexedFilePaths,
   removeIndexedFilesBatch, removeIndexedChunksBatch, deleteFileChunksBatch,
-  getCacheDir, closeCache, ConfigValidationError, QdrantConnectionError,
+  getCacheDir, closeCache, wasCacheReset, ConfigValidationError, QdrantConnectionError,
   type ScannedFile, type IndexedFile, type CodeChunk,
 } from '@astra/core';
 import { intro, spinner, note, outro } from '@clack/prompts';
@@ -72,6 +72,11 @@ export async function indexCommand(dir: string = '.'): Promise<void> {
 
     const cacheDir = getCacheDir(rootDir);
     const cachedPaths = getAllIndexedFilePaths(cacheDir);
+
+    if (wasCacheReset(cacheDir)) {
+      note('Cache schema was upgraded. All files will be re-indexed.', 'Cache Reset');
+    }
+
     const scannedPaths = new Set(files.map(f => f.relativePath));
     const staleFiles = cachedPaths.filter(p => !scannedPaths.has(p));
 
