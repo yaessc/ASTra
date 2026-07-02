@@ -35,6 +35,22 @@ describe('initLanguages', () => {
     tree.delete();
   });
 
+  it('parses JSX constructs (self-closing, attributes, children, fragments)', () => {
+    const tsx = getParser('tsx');
+
+    let tree = tsx.parse('const a = <br />;');
+    expect(tree.rootNode.type).toBe('program');
+    tree.delete();
+
+    tree = tsx.parse('const b = <div id="root"><span>text</span></div>;');
+    expect(tree.rootNode.type).toBe('program');
+    tree.delete();
+
+    tree = tsx.parse('const c = <><span>a</span><span>b</span></>;');
+    expect(tree.rootNode.type).toBe('program');
+    tree.delete();
+  });
+
   it('parses TypeScript type annotations (typescript parser)', () => {
     const ts = getParser('typescript');
     const source = 'const x: string = "hello";';
