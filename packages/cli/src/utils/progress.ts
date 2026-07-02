@@ -29,6 +29,8 @@ export class ProgressBarManager {
   update(value: number, payload?: Record<string, string | number>): void {
     if (this.bar && this._isRunning) {
       this.bar.update(value, payload);
+    } else {
+      console.warn('ProgressBarManager: update() called before start()');
     }
   }
 
