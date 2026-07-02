@@ -42,6 +42,11 @@ describe('ConfigValidationError', () => {
     writeFileSync(configPath, JSON.stringify({ chunkOverlap: 100, linesPerBodyChunk: 50 }));
     expect(() => loadConfig(dir)).toThrowError('Config validation failed');
   });
+
+  it('rejects non-http/https qdrantUrl schemes', () => {
+    writeFileSync(configPath, JSON.stringify({ qdrantUrl: 'ftp://localhost:6333' }));
+    expect(() => loadConfig(dir)).toThrowError('Config validation failed');
+  });
 });
 
 describe('writeDefaultConfig', () => {
