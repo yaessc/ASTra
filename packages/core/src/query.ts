@@ -12,7 +12,7 @@ export function toQdrantPayload(payload: Record<string, unknown> | null | undefi
     entityTypes: Array.isArray(payload?.entityTypes) ? payload.entityTypes as string[] : [],
     entityNames: Array.isArray(payload?.entityNames) ? payload.entityNames as string[] : [],
     firstEntitySignature: String(payload?.firstEntitySignature ?? ''),
-    entities: Array.isArray(payload?.entities) ? payload.entities as Array<Record<string, unknown>> : [],
+    entities: Array.isArray(payload?.entities) ? payload.entities as Omit<CodeEntity, 'code'>[] : [],
     entitiesJson: String(payload?.entitiesJson ?? '[]'),
     code: String(payload?.code ?? ''),
     language: String(payload?.language ?? 'typescript'),
