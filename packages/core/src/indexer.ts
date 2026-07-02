@@ -1,7 +1,7 @@
 import { QdrantClient } from '@qdrant/js-client-rest';
 import type { AstraConfig, CodeChunk, IndexStats } from './types.js';
 import { embedBatch, getEmbeddingDimension } from './embedder.js';
-import { getCacheDir, storeChunkQdrantIds, removeIndexedChunksBatch, getAllIndexedFilePaths, getLastIndexedMtime } from './cache.js';
+import { getCacheDir, storeChunkQdrantIds, removeIndexedChunksBatch, removeIndexedFilesBatch, getAllIndexedFilePaths, getLastIndexedMtime } from './cache.js';
 import { QdrantConnectionError } from './errors.js';
 import { createClient, safeQdrantCall } from './qdrant.js';
 import { createHash } from 'node:crypto';
@@ -91,6 +91,7 @@ export async function indexChunks(
       });
     }, config);
     removeIndexedChunksBatch(cacheDir, filePaths);
+    removeIndexedFilesBatch(cacheDir, filePaths);
   }
 
   let upsertBatch: {
