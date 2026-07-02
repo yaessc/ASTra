@@ -149,21 +149,21 @@ describe('ensureCollection', () => {
 });
 
 describe('indexChunks', () => {
-  it('deletes existing points per unique filePath before upsert', async () => {
+  it('upserts new points and does not blanket-delete by filePath', async () => {
     vi.mocked(embedBatch).mockImplementation(async function* () {
       yield { chunk: makeChunk({ id: 'c1' }), embedding: [0.1, 0.2] };
     });
 
     await indexChunks([makeChunk({ id: 'c1' })], mockConfig, '/tmp', makeMockClient());
 
-    expect(mockDelete).toHaveBeenCalledWith('test_collection', expect.objectContaining({
+    expect(mockUpsert).toHaveBeenCalledWith('test_collection', expect.objectContaining({
+      points: expect.arrayContaining([
+        expect.objectContaining({ id: expect.any(String) }),
+      ]),
+    }));
+    expect(mockDelete).not.toHaveBeenCalledWith('test_collection', expect.objectContaining({
       filter: expect.objectContaining({
-        must: expect.arrayContaining([
-          expect.objectContaining({
-            key: 'filePath',
-            match: { any: ['src/a.ts'] },
-          }),
-        ]),
+        key: 'filePath',
       }),
     }));
   });
@@ -184,7 +184,7 @@ describe('indexChunks', () => {
     vi.mocked(embedBatch).mockImplementation(async function* () {
       yield { chunk: makeChunk({ id: 'c1' }), embedding: [0.1, 0.2] };
     });
-    mockDelete.mockRejectedValue(new TypeError('fetch failed'));
+    mockUpsert.mockRejectedValue(new TypeError('fetch failed'));
 
     await expect(
       indexChunks([makeChunk({ id: 'c1' })], mockConfig, '/tmp', makeMockClient())

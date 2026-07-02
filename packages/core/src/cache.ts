@@ -114,6 +114,16 @@ export function removeIndexedChunksBatch(cacheDir: string, filePaths: string[]):
   tx(filePaths);
 }
 
+export function getChunkQdrantIdsByFilePaths(cacheDir: string, filePaths: string[]): string[] {
+  if (filePaths.length === 0) return [];
+  const d = getDb(cacheDir);
+  const placeholders = filePaths.map(() => '?').join(',');
+  const rows = d.prepare(
+    `SELECT qdrant_id FROM indexed_chunks WHERE file_path IN (${placeholders})`
+  ).all(...filePaths) as { qdrant_id: string }[];
+  return rows.map(r => r.qdrant_id).filter((id): id is string => id != null);
+}
+
 export function storeChunkQdrantIds(
   cacheDir: string,
   mappings: { chunkId: string; filePath: string; startLine: number; endLine: number; qdrantId: string }[],

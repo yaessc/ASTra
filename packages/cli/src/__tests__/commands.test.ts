@@ -76,6 +76,7 @@ vi.mock('@astra/core', () => ({
   removeIndexedFilesBatch: vi.fn(),
   removeIndexedChunks: vi.fn(),
   removeIndexedChunksBatch: vi.fn(),
+  getChunkQdrantIdsByFilePaths: vi.fn(() => []),
   deleteFileChunks: vi.fn(),
   deleteFileChunksBatch: vi.fn(),
   getCacheDir: vi.fn(() => '/tmp/cache'),

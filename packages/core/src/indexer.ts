@@ -1,7 +1,7 @@
 import { QdrantClient } from '@qdrant/js-client-rest';
 import type { AstraConfig, CodeChunk, IndexStats } from './types.js';
 import { embedBatch, getEmbeddingDimension } from './embedder.js';
-import { getCacheDir, storeChunkQdrantIds, removeIndexedChunksBatch, removeIndexedFilesBatch, getAllIndexedFilePaths, getLastIndexedMtime } from './cache.js';
+import { getCacheDir, storeChunkQdrantIds, removeIndexedChunksBatch, removeIndexedFilesBatch, getChunkQdrantIdsByFilePaths, getAllIndexedFilePaths, getLastIndexedMtime } from './cache.js';
 import { QdrantConnectionError } from './errors.js';
 import { createClient, safeQdrantCall } from './qdrant.js';
 import { createHash } from 'node:crypto';
@@ -82,19 +82,16 @@ export async function indexChunks(
   const cacheDir = getCacheDir(rootDir);
 
   const filePaths = [...new Set(chunks.map(c => c.filePath))];
+
+  // Phase 0: Remove indexed_files entries early so crash leads to re-index
   if (filePaths.length > 0) {
-    await safeQdrantCall(async () => {
-      await qdrantClient.delete(config.collectionName, {
-        wait: true,
-        filter: {
-          must: [{ key: 'filePath', match: { any: filePaths } }],
-        },
-      });
-    }, config);
-    removeIndexedChunksBatch(cacheDir, filePaths);
     removeIndexedFilesBatch(cacheDir, filePaths);
   }
 
+  // Phase 1: Capture old Qdrant IDs before any mutations
+  const oldQdrantIds = getChunkQdrantIdsByFilePaths(cacheDir, filePaths);
+
+  // Phase 2: Upsert new points (overwrites matching deterministic IDs)
   let upsertBatch: {
     id: string;
     vector: { "dense": number[]; "bm25": { text: string; model: string } };
@@ -138,6 +135,23 @@ export async function indexChunks(
     }, config);
   }
 
+  // Phase 3: Delete stale old Qdrant points not in the new set
+  const newQdrantIds = new Set(qdrantMappings.map(m => m.qdrantId));
+  const staleQdrantIds = oldQdrantIds.filter(id => !newQdrantIds.has(id));
+
+  if (staleQdrantIds.length > 0) {
+    await safeQdrantCall(async () => {
+      await qdrantClient.delete(config.collectionName, {
+        wait: true,
+        points: staleQdrantIds,
+      });
+    }, config);
+  }
+
+  // Phase 4: Update cache — remove old entries, store new ones
+  if (filePaths.length > 0) {
+    removeIndexedChunksBatch(cacheDir, filePaths);
+  }
   storeChunkQdrantIds(cacheDir, qdrantMappings.map(({ chunk, qdrantId }) => ({
     chunkId: chunk.id,
     filePath: chunk.filePath,

@@ -16,7 +16,7 @@ export {
 export { searchCodebase, searchHybrid, type SearchMode } from './query.js';
 export {
   getCacheDir, clearCache, closeCache, wasCacheReset, setIndexedFile, setIndexedFiles, getIndexedFile,
-  removeIndexedFile, removeIndexedFilesBatch, removeIndexedChunks, removeIndexedChunksBatch, getAllIndexedFilePaths,
+  removeIndexedFile, removeIndexedFilesBatch, removeIndexedChunks, removeIndexedChunksBatch, getChunkQdrantIdsByFilePaths, getAllIndexedFilePaths,
   getMetadata, setMetadata,
 } from './cache.js';
 export {
