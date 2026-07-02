@@ -161,6 +161,7 @@ export async function deleteFileChunks(filePath: string, config: AstraConfig): P
       if (err.message.toLowerCase().includes('not found')) return;
       throw err;
     }
+    throw err;
   }
 }
 
@@ -181,6 +182,7 @@ export async function deleteFileChunksBatch(filePaths: string[], config: AstraCo
       if (err.message.toLowerCase().includes('not found')) return;
       throw err;
     }
+    throw err;
   }
 }
 
@@ -233,7 +235,11 @@ export async function resetCollection(config: AstraConfig): Promise<void> {
       await client.deleteCollection(config.collectionName);
     }, config);
   } catch (err) {
-    if (err instanceof QdrantConnectionError) throw err;
+    if (err instanceof QdrantConnectionError) {
+      if (err.message.toLowerCase().includes('not found')) return;
+      throw err;
+    }
+    throw err;
   }
 }
 

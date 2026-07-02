@@ -221,4 +221,16 @@ describe('resetCollection', () => {
 
     expect(mockDeleteCollection).toHaveBeenCalledWith('test_collection');
   });
+
+  it('suppresses "not found" errors (idempotent reset)', async () => {
+    mockDeleteCollection.mockRejectedValue(new Error('Not found: Collection test_collection does not exist'));
+
+    await expect(resetCollection(mockConfig)).resolves.toBeUndefined();
+  });
+
+  it('propagates other errors', async () => {
+    mockDeleteCollection.mockRejectedValue(new Error('Permission denied'));
+
+    await expect(resetCollection(mockConfig)).rejects.toThrow();
+  });
 });
