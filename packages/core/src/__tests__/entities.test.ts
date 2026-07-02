@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { initLanguages } from '../languages.js';
 import { extractEntities } from '../entities.js';
+import { getHandlers } from '../visitors/registry.js';
+import type { SupportedLanguage } from '../types.js';
 
 beforeAll(async () => {
   await initLanguages();
@@ -49,5 +51,17 @@ describe('export extraction', () => {
     const entities = extractEntities(source, 'test.ts', 'typescript');
     expect(entities).toHaveLength(1);
     expect(entities[0].type).toBe('export');
+  });
+});
+
+describe('getHandlers', () => {
+  it('returns handlers for known languages', () => {
+    const handlers = getHandlers('typescript');
+    expect(handlers).toBeDefined();
+    expect(handlers.function_declaration).toBeDefined();
+  });
+
+  it('throws for unsupported languages', () => {
+    expect(() => getHandlers('python' as SupportedLanguage)).toThrow(/No entity handlers registered/);
   });
 });
