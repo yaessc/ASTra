@@ -51,7 +51,7 @@ export function chunkEntities(
 
     if (metaContent.length >= MIN_META_LENGTH) {
       chunks.push({
-        id: `${filePath}:${entity.startLine}-${entity.endLine}:${entity.name}:meta`,
+        id: `${filePath}:${entity.startLine}-${entity.endLine}:${entity.name}:${entity.type}:meta`,
         filePath,
         startLine: entity.startLine,
         endLine: entity.endLine,
@@ -67,7 +67,7 @@ export function chunkEntities(
 
     if (totalLines <= options.maxBodyLines && entity.code.length <= options.maxBodyChars) {
       chunks.push({
-        id: `${filePath}:${entity.startLine}-${entity.endLine}:${entity.name}:body`,
+        id: `${filePath}:${entity.startLine}-${entity.endLine}:${entity.name}:${entity.type}:body`,
         filePath,
         startLine: entity.startLine,
         endLine: entity.endLine,
@@ -88,7 +88,7 @@ export function chunkEntities(
         const chunkEndLine = Math.min(chunkStartLine + chunkSize - 1, entity.endLine);
 
         chunks.push({
-          id: `${filePath}:${entity.startLine}-${entity.endLine}:${entity.name}:body:${seqIndex}`,
+          id: `${filePath}:${entity.startLine}-${entity.endLine}:${entity.name}:${entity.type}:body:${seqIndex}`,
           filePath,
           startLine: chunkStartLine,
           endLine: chunkEndLine,
