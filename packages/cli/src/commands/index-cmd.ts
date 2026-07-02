@@ -86,10 +86,11 @@ export async function indexCommand(dir: string = '.'): Promise<void> {
         await deleteFileChunksBatch(staleFiles, config);
         removeIndexedFilesBatch(cacheDir, staleFiles);
         removeIndexedChunksBatch(cacheDir, staleFiles);
+        s.stop(`Removed ${staleFiles.length} deleted files`);
       } catch {
+        s.stop('Warning');
         note(`Could not remove ${staleFiles.length} files from Qdrant. Will retry on next index.`, 'Warning');
       }
-      s.stop(`Removed ${staleFiles.length} deleted files`);
     }
 
     if (files.length === 0) {
@@ -156,7 +157,9 @@ export async function indexCommand(dir: string = '.'): Promise<void> {
       hideCursor: true,
     });
 
-    const qdrantClient = await ensureCollection(config);
+    const qdrantClient = await ensureCollection(config, (msg) => {
+      note(msg, 'Warning');
+    });
 
     progressBar.start(totalChunks, 0, { speed: '0', eta_formatted: '--' });
 

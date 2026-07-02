@@ -23,7 +23,10 @@ function chunkToPayload(chunk: CodeChunk, maxBodyChars: number) {
   };
 }
 
-export async function ensureCollection(config: AstraConfig): Promise<QdrantClient> {
+export async function ensureCollection(
+  config: AstraConfig,
+  onWarning?: (message: string) => void,
+): Promise<QdrantClient> {
   const client = createClient(config);
   const vectorSize = await getEmbeddingDimension(config);
 
@@ -65,7 +68,7 @@ export async function ensureCollection(config: AstraConfig): Promise<QdrantClien
     }, config);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.warn(`[astra] Could not create payload index (non-fatal): ${msg}`);
+    onWarning?.(`Could not create payload index (non-fatal): ${msg}`);
   }
 
   return client;

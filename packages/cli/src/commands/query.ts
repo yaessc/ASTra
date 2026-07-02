@@ -325,7 +325,12 @@ export async function queryCommand(query?: string, options?: { limit?: string; m
     });
 
     try {
-      await ensureCollection(config);
+      const warnings: string[] = [];
+      await ensureCollection(config, (msg) => { warnings.push(msg); });
+      s.stop('Ready');
+      for (const w of warnings) {
+        note(w, 'Warning');
+      }
     } catch (err) {
       if (err instanceof QdrantConnectionError) {
         s.stop('Qdrant not reachable');
@@ -335,8 +340,6 @@ export async function queryCommand(query?: string, options?: { limit?: string; m
       }
       throw err;
     }
-
-    s.stop('Ready');
   } catch (err) {
     modelBar.stop();
     s.stop('Initialization failed');
