@@ -22,5 +22,5 @@ export {
 } from './cache.js';
 export {
   QdrantConnectionError, ModelLoadError, ConfigValidationError,
-  isQdrantError, wrapQdrantError,
+  isQdrantError, wrapQdrantError, isQdrantNotFoundError,
 } from './errors.js';

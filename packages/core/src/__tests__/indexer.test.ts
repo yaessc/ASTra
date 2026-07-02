@@ -224,7 +224,9 @@ describe('indexChunks', () => {
 
 describe('deleteFileChunks', () => {
   it('suppresses "not found" errors', async () => {
-    mockDelete.mockRejectedValue(new Error('Not found: Collection test_collection does not exist'));
+    const err = new Error('Not Found');
+    (err as unknown as Record<string, unknown>).status = 404;
+    mockDelete.mockRejectedValue(err);
 
     await expect(deleteFileChunks('src/a.ts', mockConfig)).resolves.toBeUndefined();
   });
@@ -232,7 +234,9 @@ describe('deleteFileChunks', () => {
 
 describe('deleteFileChunksBatch', () => {
   it('suppresses "not found" errors', async () => {
-    mockDelete.mockRejectedValue(new Error('Not found: Collection test_collection does not exist'));
+    const err = new Error('Not Found');
+    (err as unknown as Record<string, unknown>).status = 404;
+    mockDelete.mockRejectedValue(err);
 
     await expect(deleteFileChunksBatch(['src/a.ts', 'src/b.ts'], mockConfig)).resolves.toBeUndefined();
   });
@@ -253,7 +257,9 @@ describe('resetCollection', () => {
   });
 
   it('suppresses "not found" errors (idempotent reset)', async () => {
-    mockDeleteCollection.mockRejectedValue(new Error('Not found: Collection test_collection does not exist'));
+    const err = new Error('Not Found');
+    (err as unknown as Record<string, unknown>).status = 404;
+    mockDeleteCollection.mockRejectedValue(err);
 
     await expect(resetCollection(mockConfig)).resolves.toBeUndefined();
   });

@@ -2,7 +2,7 @@ import { QdrantClient } from '@qdrant/js-client-rest';
 import type { AstraConfig, CodeChunk, IndexStats, IndexVerificationReport, FileIntegrityEntry } from './types.js';
 import { embedBatch, getEmbeddingDimension } from './embedder.js';
 import { getCacheDir, storeChunkQdrantIds, removeIndexedChunksBatch, removeIndexedFilesBatch, getChunkQdrantIdsByFilePaths, getAllIndexedFilePaths, getLastIndexedMtime, getChunkCount, getAllChunkByFilePath, removeIndexedFile, removeIndexedChunks } from './cache.js';
-import { QdrantConnectionError } from './errors.js';
+import { QdrantConnectionError, isQdrantNotFoundError } from './errors.js';
 import { createClient, safeQdrantCall } from './qdrant.js';
 import { createHash } from 'node:crypto';
 
@@ -176,10 +176,7 @@ export async function deleteFileChunks(filePath: string, config: AstraConfig): P
       });
     }, config);
   } catch (err) {
-    if (err instanceof QdrantConnectionError) {
-      if (err.message.toLowerCase().includes('not found')) return;
-      throw err;
-    }
+    if (err instanceof QdrantConnectionError && isQdrantNotFoundError(err)) return;
     throw err;
   }
 }
@@ -197,10 +194,7 @@ export async function deleteFileChunksBatch(filePaths: string[], config: AstraCo
       });
     }, config);
   } catch (err) {
-    if (err instanceof QdrantConnectionError) {
-      if (err.message.toLowerCase().includes('not found')) return;
-      throw err;
-    }
+    if (err instanceof QdrantConnectionError && isQdrantNotFoundError(err)) return;
     throw err;
   }
 }
@@ -344,10 +338,7 @@ export async function resetCollection(config: AstraConfig): Promise<void> {
       await client.deleteCollection(config.collectionName);
     }, config);
   } catch (err) {
-    if (err instanceof QdrantConnectionError) {
-      if (err.message.toLowerCase().includes('not found')) return;
-      throw err;
-    }
+    if (err instanceof QdrantConnectionError && isQdrantNotFoundError(err)) return;
     throw err;
   }
 }

@@ -41,3 +41,11 @@ export function wrapQdrantError(err: unknown, url: string): QdrantConnectionErro
   }
   return new QdrantConnectionError(`${base}\n  ${err instanceof Error ? err.message : String(err)}`, err);
 }
+
+export function isQdrantNotFoundError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  const candidate = err instanceof QdrantConnectionError
+    ? (err.cause as Record<string, unknown> | undefined)
+    : err;
+  return candidate !== null && typeof candidate === 'object' && (candidate as Record<string, unknown>).status === 404;
+}
