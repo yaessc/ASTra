@@ -6,7 +6,7 @@ export interface ChunkOptions {
   maxBodyLines: number;
   maxBodyChars: number;
   linesPerBodyChunk: number;
-  chunkOverlap?: number;
+  chunkOverlap: number;
 }
 
 const MIN_META_LENGTH = 10;
@@ -78,7 +78,7 @@ export function chunkEntities(
       });
     } else {
       const chunkSize = options.linesPerBodyChunk;
-      const overlap = options.chunkOverlap ?? Math.floor(chunkSize / 4);
+      const overlap = options.chunkOverlap;
       const step = Math.max(1, chunkSize - overlap);
       let seqIndex = 0;
       for (let offset = 0; offset < totalLines; offset += step) {
