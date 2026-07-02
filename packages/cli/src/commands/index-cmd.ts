@@ -67,8 +67,12 @@ export async function indexCommand(dir: string = '.'): Promise<void> {
     s.stop('Embedding model ready');
 
     s.start('Scanning files...');
-    const { files } = scanFiles(rootDir, config);
+    const { files, warnings } = scanFiles(rootDir, config);
     s.stop(`Found ${files.length} files`);
+
+    for (const w of warnings) {
+      note(w, 'Warning');
+    }
 
     const cacheDir = getCacheDir(rootDir);
     const cachedPaths = getAllIndexedFilePaths(cacheDir);

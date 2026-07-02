@@ -64,6 +64,7 @@ export function scanFiles(rootDir: string, config: AstraConfig): ScanResult {
   });
 
   const files: ScannedFile[] = [];
+  const warnings: string[] = [];
 
   for (const filePath of allFiles) {
     try {
@@ -91,10 +92,13 @@ export function scanFiles(rootDir: string, config: AstraConfig): ScanResult {
         language,
         mtime: stat.mtimeMs,
       });
-    } catch {
-      continue;
+    } catch (err) {
+      const code = err && typeof err === 'object' && 'code' in err
+        ? (err as NodeJS.ErrnoException).code
+        : 'UNKNOWN';
+      warnings.push(`Skipping ${filePath}: ${code}`);
     }
   }
 
-  return { files };
+  return { files, warnings };
 }

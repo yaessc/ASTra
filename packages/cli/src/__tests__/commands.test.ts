@@ -130,9 +130,10 @@ describe('indexCommand', () => {
       files: [{
         path: '/tmp/src/a.ts',
         relativePath: 'src/a.ts',
-        language: 'typescript',
+        language: 'typescript' as const,
         mtime: 1000,
       }],
+      warnings: [],
     });
     mockReadFileWithHash.mockReturnValue({ content: 'const a = 1;', hash: 'abc' });
     mockExtractEntities.mockReturnValue([]);

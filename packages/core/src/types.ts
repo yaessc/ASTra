@@ -87,6 +87,7 @@ export interface ScannedFile {
 
 export interface ScanResult {
   files: ScannedFile[];
+  warnings: string[];
 }
 
 export interface QdrantCodeChunkPayload {
