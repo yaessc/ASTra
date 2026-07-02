@@ -6,6 +6,7 @@ import { indexCommand } from './commands/index-cmd.js';
 import { queryCommand } from './commands/query.js';
 import { statusCommand } from './commands/status.js';
 import { resetCommand } from './commands/reset.js';
+import { verifyCommand } from './commands/verify.js';
 
 const program = new Command();
 
@@ -46,6 +47,13 @@ program
   .description('Clear the index and re-index from scratch')
   .option('-C, --dir <path>', 'Project root directory', '.')
   .action(resetCommand);
+
+program
+  .command('verify')
+  .description('Verify index integrity between cache and Qdrant')
+  .option('--fix', 'Repair discrepancies found')
+  .option('-C, --dir <path>', 'Project root directory', '.')
+  .action(verifyCommand);
 
 program.parseAsync().catch((err: unknown) => {
   const message = err instanceof Error ? err.message : String(err);

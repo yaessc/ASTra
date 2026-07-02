@@ -5,6 +5,7 @@ const {
   mockScanFiles, mockInitLanguages, mockSearchHybrid,
   mockGetIndexStats, mockResetCollection,
   mockReadFileWithHash, mockExtractEntities, mockChunkEntities,
+  mockVerifyIndexIntegrity, mockRepairIndex,
   MockConfigValidationError, MockQdrantConnectionError,
 } = vi.hoisted(() => ({
   mockLoadConfig: vi.fn(),
@@ -18,6 +19,8 @@ const {
   mockReadFileWithHash: vi.fn(),
   mockExtractEntities: vi.fn(),
   mockChunkEntities: vi.fn(),
+  mockVerifyIndexIntegrity: vi.fn(),
+  mockRepairIndex: vi.fn(),
   MockConfigValidationError: class extends Error {
     issues: { path: string; message: string }[];
     constructor(issues: { path: string; message: string }[]) {
@@ -62,6 +65,8 @@ vi.mock('@astra/core', () => ({
   searchHybrid: mockSearchHybrid,
   getIndexStats: mockGetIndexStats,
   resetCollection: mockResetCollection,
+  verifyIndexIntegrity: mockVerifyIndexIntegrity,
+  repairIndex: mockRepairIndex,
   ConfigValidationError: MockConfigValidationError,
   QdrantConnectionError: MockQdrantConnectionError,
   readFileWithHash: mockReadFileWithHash,
@@ -89,6 +94,7 @@ import { indexCommand } from '../commands/index-cmd.js';
 import { queryCommand } from '../commands/query.js';
 import { statusCommand } from '../commands/status.js';
 import { resetCommand } from '../commands/reset.js';
+import { verifyCommand } from '../commands/verify.js';
 import { note } from '@clack/prompts';
 
 beforeEach(() => {
@@ -221,5 +227,104 @@ describe('resetCommand', () => {
     await resetCommand({ dir: '/tmp' });
 
     expect(note).toHaveBeenCalledWith(expect.stringContaining('Invalid URL'), 'Config Error');
+  });
+});
+
+describe('verifyCommand', () => {
+  it('reports OK when integrity is clean', async () => {
+    mockLoadConfig.mockReturnValue({
+      include: ['src/**/*.ts'],
+      exclude: [],
+      qdrantUrl: 'http://localhost:6333',
+      collectionName: 'test',
+      modelId: 'test-model',
+      maxChunkSize: 50, maxBodyLines: 150, maxBodyChars: 4000,
+      linesPerBodyChunk: 100, chunkOverlap: 25,
+    });
+    mockVerifyIndexIntegrity.mockResolvedValue({
+      ok: 5, missingFromQdrant: 0, orphanedInQdrant: 0, mismatched: 0,
+      details: [],
+    });
+
+    await verifyCommand({ dir: '/tmp' });
+
+    expect(note).toHaveBeenCalledWith(expect.stringContaining('Cache and Qdrant are in sync'), 'Integrity OK');
+  });
+
+  it('shows repair hint when issues found without --fix', async () => {
+    mockLoadConfig.mockReturnValue({
+      include: ['src/**/*.ts'],
+      exclude: [],
+      qdrantUrl: 'http://localhost:6333',
+      collectionName: 'test',
+      modelId: 'test-model',
+      maxChunkSize: 50, maxBodyLines: 150, maxBodyChars: 4000,
+      linesPerBodyChunk: 100, chunkOverlap: 25,
+    });
+    mockVerifyIndexIntegrity.mockResolvedValue({
+      ok: 0, missingFromQdrant: 2, orphanedInQdrant: 1, mismatched: 0,
+      details: [],
+    });
+
+    await verifyCommand({ dir: '/tmp' });
+
+    expect(note).toHaveBeenCalledWith(expect.stringContaining('--fix'), 'Repair available');
+  });
+
+  it('calls repairIndex when --fix is passed and confirmed', async () => {
+    const { confirm } = await import('@clack/prompts');
+    vi.mocked(confirm).mockResolvedValueOnce(true);
+
+    mockLoadConfig.mockReturnValue({
+      include: ['src/**/*.ts'],
+      exclude: [],
+      qdrantUrl: 'http://localhost:6333',
+      collectionName: 'test',
+      modelId: 'test-model',
+      maxChunkSize: 50, maxBodyLines: 150, maxBodyChars: 4000,
+      linesPerBodyChunk: 100, chunkOverlap: 25,
+    });
+    mockVerifyIndexIntegrity.mockResolvedValue({
+      ok: 0, missingFromQdrant: 1, orphanedInQdrant: 0, mismatched: 0,
+      details: [],
+    });
+    mockRepairIndex.mockResolvedValue({
+      ok: 0, missingFromQdrant: 1, orphanedInQdrant: 0, mismatched: 0,
+      details: [],
+    });
+
+    await verifyCommand({ dir: '/tmp', fix: true });
+
+    expect(mockRepairIndex).toHaveBeenCalled();
+    expect(note).toHaveBeenCalledWith(expect.stringContaining('re-index'), 'Next Step');
+  });
+
+  it('handles ConfigValidationError gracefully', async () => {
+    mockLoadConfig.mockImplementation(() => {
+      throw new MockConfigValidationError([
+        { path: 'qdrantUrl', message: 'Invalid URL' },
+      ]);
+    });
+
+    await verifyCommand({ dir: '/tmp' });
+
+    expect(note).toHaveBeenCalledWith(expect.stringContaining('Invalid URL'), 'Config Error');
+  });
+
+  it('handles QdrantConnectionError gracefully', async () => {
+    mockLoadConfig.mockReturnValue({
+      include: ['src/**/*.ts'],
+      exclude: [],
+      qdrantUrl: 'http://localhost:6333',
+      collectionName: 'test',
+      modelId: 'test-model',
+      maxChunkSize: 50, maxBodyLines: 150, maxBodyChars: 4000,
+      linesPerBodyChunk: 100, chunkOverlap: 25,
+    });
+    mockVerifyIndexIntegrity.mockRejectedValue(new MockQdrantConnectionError('Connection refused'));
+
+    await verifyCommand({ dir: '/tmp' });
+
+    expect(note).toHaveBeenCalledWith(expect.stringContaining('Connection refused'), 'Qdrant Error');
   });
 });

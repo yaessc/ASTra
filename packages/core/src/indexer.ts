@@ -1,7 +1,7 @@
 import { QdrantClient } from '@qdrant/js-client-rest';
-import type { AstraConfig, CodeChunk, IndexStats } from './types.js';
+import type { AstraConfig, CodeChunk, IndexStats, IndexVerificationReport, FileIntegrityEntry } from './types.js';
 import { embedBatch, getEmbeddingDimension } from './embedder.js';
-import { getCacheDir, storeChunkQdrantIds, removeIndexedChunksBatch, removeIndexedFilesBatch, getChunkQdrantIdsByFilePaths, getAllIndexedFilePaths, getLastIndexedMtime } from './cache.js';
+import { getCacheDir, storeChunkQdrantIds, removeIndexedChunksBatch, removeIndexedFilesBatch, getChunkQdrantIdsByFilePaths, getAllIndexedFilePaths, getLastIndexedMtime, getChunkCount, getAllChunkByFilePath, removeIndexedFile, removeIndexedChunks } from './cache.js';
 import { QdrantConnectionError } from './errors.js';
 import { createClient, safeQdrantCall } from './qdrant.js';
 import { createHash } from 'node:crypto';
@@ -206,11 +206,13 @@ export async function getIndexStats(config: AstraConfig, rootDir?: string): Prom
   const client = createClient(config);
 
   let totalFiles = 0;
+  let cacheChunkCount = 0;
   let lastIndexed: string | null = null;
 
   if (rootDir) {
     const cacheDir = getCacheDir(rootDir);
     totalFiles = getAllIndexedFilePaths(cacheDir).length;
+    cacheChunkCount = getChunkCount(cacheDir);
     const lastMtime = getLastIndexedMtime(cacheDir);
     if (lastMtime) lastIndexed = new Date(lastMtime).toISOString();
   }
@@ -231,6 +233,7 @@ export async function getIndexStats(config: AstraConfig, rootDir?: string): Prom
       lastIndexed,
       collectionSize: count,
       vectorSize,
+      ...(rootDir ? { cacheChunkCount } : {}),
     };
   } catch (err) {
     if (err instanceof QdrantConnectionError) throw err;
@@ -240,8 +243,95 @@ export async function getIndexStats(config: AstraConfig, rootDir?: string): Prom
       lastIndexed,
       collectionSize: 0,
       vectorSize: null,
+      ...(rootDir ? { cacheChunkCount } : {}),
     };
   }
+}
+
+async function scrollAllQdrantPoints(config: AstraConfig): Promise<Map<string, number>> {
+  const client = createClient(config);
+  const fileCountMap = new Map<string, number>();
+  let offset: unknown = undefined;
+  do {
+    const result = await safeQdrantCall(async () => {
+      return await client.scroll(config.collectionName, {
+        limit: 1000,
+        offset: offset as (string | number | undefined),
+        with_payload: { include: ['filePath'] },
+        with_vector: false,
+      });
+    }, config);
+    for (const point of result.points) {
+      const fp = (point.payload as Record<string, unknown> | undefined)?.filePath;
+      if (typeof fp === 'string') {
+        fileCountMap.set(fp, (fileCountMap.get(fp) ?? 0) + 1);
+      }
+    }
+    offset = result.next_page_offset;
+  } while (offset);
+  return fileCountMap;
+}
+
+export async function verifyIndexIntegrity(config: AstraConfig, rootDir: string): Promise<IndexVerificationReport> {
+  const cacheDir = getCacheDir(rootDir);
+  const cachePaths = new Set(getAllIndexedFilePaths(cacheDir));
+  const cacheChunks = getAllChunkByFilePath(cacheDir);
+
+  const qdrantCounts = await scrollAllQdrantPoints(config);
+
+  const allPaths = new Set<string>([...cachePaths, ...qdrantCounts.keys()]);
+  const details: FileIntegrityEntry[] = [];
+  let ok = 0, missingFromQdrant = 0, orphanedInQdrant = 0, mismatched = 0;
+
+  for (const filePath of allPaths) {
+    const cacheCount = cacheChunks.get(filePath)?.length ?? 0;
+    const qdrantCount = qdrantCounts.get(filePath) ?? 0;
+    const inCache = cachePaths.has(filePath);
+
+    let status: FileIntegrityEntry['status'];
+    if (inCache && qdrantCount === 0) {
+      status = 'missing';
+      missingFromQdrant++;
+    } else if (!inCache && qdrantCount > 0) {
+      status = 'orphaned';
+      orphanedInQdrant++;
+    } else if (inCache && cacheCount !== qdrantCount) {
+      status = 'mismatch';
+      mismatched++;
+    } else {
+      status = 'ok';
+      ok++;
+    }
+    details.push({ filePath, cacheChunkCount: cacheCount, qdrantChunkCount: qdrantCount, status });
+  }
+
+  return { ok, missingFromQdrant, orphanedInQdrant, mismatched, details };
+}
+
+export async function repairIndex(config: AstraConfig, rootDir: string): Promise<IndexVerificationReport> {
+  const report = await verifyIndexIntegrity(config, rootDir);
+
+  const orphanedPaths = report.details.filter(d => d.status === 'orphaned').map(d => d.filePath);
+  const missingPaths = report.details.filter(d => d.status === 'missing').map(d => d.filePath);
+  const mismatchedPaths = report.details.filter(d => d.status === 'mismatch').map(d => d.filePath);
+
+  const cacheDir = getCacheDir(rootDir);
+
+  if (orphanedPaths.length > 0) {
+    await deleteFileChunksBatch(orphanedPaths, config);
+  }
+
+  if (mismatchedPaths.length > 0) {
+    await deleteFileChunksBatch(mismatchedPaths, config);
+  }
+
+  const removeFromCache = [...missingPaths, ...mismatchedPaths];
+  for (const fp of removeFromCache) {
+    removeIndexedFile(cacheDir, fp);
+    removeIndexedChunks(cacheDir, fp);
+  }
+
+  return report;
 }
 
 export async function resetCollection(config: AstraConfig): Promise<void> {

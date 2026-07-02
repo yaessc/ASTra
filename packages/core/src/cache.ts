@@ -152,6 +152,24 @@ export function setMetadata(cacheDir: string, key: string, value: string): void 
   d.prepare('INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)').run(key, value);
 }
 
+export function getChunkCount(cacheDir: string): number {
+  const d = getDb(cacheDir);
+  const row = d.prepare('SELECT COUNT(*) as cnt FROM indexed_chunks').get() as { cnt: number };
+  return row?.cnt ?? 0;
+}
+
+export function getAllChunkByFilePath(cacheDir: string): Map<string, string[]> {
+  const d = getDb(cacheDir);
+  const rows = d.prepare('SELECT file_path, qdrant_id FROM indexed_chunks').all() as { file_path: string; qdrant_id: string }[];
+  const map = new Map<string, string[]>();
+  for (const r of rows) {
+    const ids = map.get(r.file_path);
+    if (ids) ids.push(r.qdrant_id);
+    else map.set(r.file_path, [r.qdrant_id]);
+  }
+  return map;
+}
+
 export function getLastIndexedMtime(cacheDir: string): number | null {
   const d = getDb(cacheDir);
   const row = d.prepare('SELECT MAX(mtime) as mtime FROM indexed_files').get() as { mtime: number } | undefined;

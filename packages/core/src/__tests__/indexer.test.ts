@@ -10,6 +10,7 @@ const mockUpsert = vi.fn();
 const mockGetCollection = vi.fn();
 const mockDeleteCollection = vi.fn();
 const mockGetCollectionInfo = vi.fn();
+const mockScroll = vi.fn();
 
 vi.mock('@qdrant/js-client-rest', () => ({
   QdrantClient: vi.fn().mockImplementation(() => ({
@@ -21,6 +22,7 @@ vi.mock('@qdrant/js-client-rest', () => ({
     getCollection: mockGetCollection,
     deleteCollection: mockDeleteCollection,
     getCollectionInfo: mockGetCollectionInfo,
+    scroll: mockScroll,
   })),
 }));
 
@@ -30,7 +32,30 @@ vi.mock('../embedder.js', () => ({
   embedBatch: vi.fn(),
 }));
 
-import { ensureCollection, indexChunks, deleteFileChunks, deleteFileChunksBatch, resetCollection } from '../indexer.js';
+let mockCacheData: {
+  getAllIndexedFilePaths: string[];
+  getAllChunkByFilePath: Map<string, string[]>;
+  getChunkCount: number;
+};
+
+vi.mock('../cache.js', () => ({
+  getCacheDir: vi.fn(() => '/tmp/test-cache'),
+  storeChunkQdrantIds: vi.fn(),
+  removeIndexedChunksBatch: vi.fn(),
+  removeIndexedFilesBatch: vi.fn(),
+  getChunkQdrantIdsByFilePaths: vi.fn(() => []),
+  getAllIndexedFilePaths: vi.fn(() => mockCacheData?.getAllIndexedFilePaths ?? []),
+  getAllChunkByFilePath: vi.fn(() => mockCacheData?.getAllChunkByFilePath ?? new Map()),
+  getChunkCount: vi.fn(() => mockCacheData?.getChunkCount ?? 0),
+  getLastIndexedMtime: vi.fn(() => null),
+  removeIndexedFile: vi.fn(),
+  removeIndexedChunks: vi.fn(),
+}));
+
+import {
+  ensureCollection, indexChunks, deleteFileChunks, deleteFileChunksBatch, resetCollection,
+  verifyIndexIntegrity, repairIndex,
+} from '../indexer.js';
 import { embedBatch } from '../embedder.js';
 import type { QdrantClient } from '@qdrant/js-client-rest';
 
@@ -70,6 +95,11 @@ function makeChunk(overrides: Partial<CodeChunk> = {}): CodeChunk {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockCacheData = {
+    getAllIndexedFilePaths: [],
+    getAllChunkByFilePath: new Map(),
+    getChunkCount: 0,
+  };
 });
 
 describe('ensureCollection', () => {
@@ -232,5 +262,151 @@ describe('resetCollection', () => {
     mockDeleteCollection.mockRejectedValue(new Error('Permission denied'));
 
     await expect(resetCollection(mockConfig)).rejects.toThrow();
+  });
+});
+
+describe('verifyIndexIntegrity', () => {
+  it('classifies ok when cache and Qdrant agree', async () => {
+    mockCacheData = {
+      getAllIndexedFilePaths: ['src/a.ts', 'src/b.ts'],
+      getAllChunkByFilePath: new Map([
+        ['src/a.ts', ['uuid-1', 'uuid-2']],
+        ['src/b.ts', ['uuid-3']],
+      ]),
+      getChunkCount: 3,
+    };
+
+    mockScroll.mockResolvedValue({
+      points: [
+        { id: 'uuid-1', payload: { filePath: 'src/a.ts' } },
+        { id: 'uuid-2', payload: { filePath: 'src/a.ts' } },
+        { id: 'uuid-3', payload: { filePath: 'src/b.ts' } },
+      ],
+      next_page_offset: null,
+    });
+
+    const report = await verifyIndexIntegrity(mockConfig, '/tmp');
+
+    expect(report.ok).toBe(2);
+    expect(report.missingFromQdrant).toBe(0);
+    expect(report.orphanedInQdrant).toBe(0);
+    expect(report.mismatched).toBe(0);
+  });
+
+  it('classifies missing when cache has file but Qdrant has no points', async () => {
+    mockCacheData = {
+      getAllIndexedFilePaths: ['src/orphan.ts'],
+      getAllChunkByFilePath: new Map([['src/orphan.ts', ['uuid-1']]]),
+      getChunkCount: 1,
+    };
+
+    mockScroll.mockResolvedValue({
+      points: [],
+      next_page_offset: null,
+    });
+
+    const report = await verifyIndexIntegrity(mockConfig, '/tmp');
+
+    expect(report.missingFromQdrant).toBe(1);
+    expect(report.details[0].status).toBe('missing');
+  });
+
+  it('classifies orphaned when Qdrant has points but cache has no record', async () => {
+    mockCacheData = {
+      getAllIndexedFilePaths: [],
+      getAllChunkByFilePath: new Map(),
+      getChunkCount: 0,
+    };
+
+    mockScroll.mockResolvedValue({
+      points: [
+        { id: 'uuid-1', payload: { filePath: 'src/stale.ts' } },
+      ],
+      next_page_offset: null,
+    });
+
+    const report = await verifyIndexIntegrity(mockConfig, '/tmp');
+
+    expect(report.orphanedInQdrant).toBe(1);
+    expect(report.details[0].status).toBe('orphaned');
+  });
+
+  it('classifies mismatch when chunk counts differ', async () => {
+    mockCacheData = {
+      getAllIndexedFilePaths: ['src/mismatch.ts'],
+      getAllChunkByFilePath: new Map([['src/mismatch.ts', ['uuid-1']]]),
+      getChunkCount: 1,
+    };
+
+    mockScroll.mockResolvedValue({
+      points: [
+        { id: 'uuid-1', payload: { filePath: 'src/mismatch.ts' } },
+        { id: 'uuid-2', payload: { filePath: 'src/mismatch.ts' } },
+      ],
+      next_page_offset: null,
+    });
+
+    const report = await verifyIndexIntegrity(mockConfig, '/tmp');
+
+    expect(report.mismatched).toBe(1);
+    expect(report.details[0].status).toBe('mismatch');
+  });
+
+  it('paginates through multiple scroll results', async () => {
+    mockCacheData = {
+      getAllIndexedFilePaths: ['src/a.ts'],
+      getAllChunkByFilePath: new Map([['src/a.ts', ['uuid-1', 'uuid-2']]]),
+      getChunkCount: 2,
+    };
+
+    mockScroll
+      .mockResolvedValueOnce({
+        points: [
+          { id: 'uuid-1', payload: { filePath: 'src/a.ts' } },
+        ],
+        next_page_offset: 100,
+      })
+      .mockResolvedValueOnce({
+        points: [
+          { id: 'uuid-2', payload: { filePath: 'src/a.ts' } },
+        ],
+        next_page_offset: null,
+      });
+
+    const report = await verifyIndexIntegrity(mockConfig, '/tmp');
+
+    expect(report.ok).toBe(1);
+    expect(mockScroll).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('repairIndex', () => {
+  it('deletes orphaned Qdrant points and removes missing cache entries', async () => {
+    mockCacheData = {
+      getAllIndexedFilePaths: ['src/missing.ts'],
+      getAllChunkByFilePath: new Map([['src/missing.ts', ['uuid-1']]]),
+      getChunkCount: 1,
+    };
+
+    mockScroll.mockResolvedValue({
+      points: [
+        { id: 'uuid-orphan', payload: { filePath: 'src/orphan.ts' } },
+      ],
+      next_page_offset: null,
+    });
+
+    const report = await repairIndex(mockConfig, '/tmp');
+
+    expect(report.missingFromQdrant).toBe(1);
+    expect(report.orphanedInQdrant).toBe(1);
+
+    // orphaned path was deleted from Qdrant
+    expect(mockDelete).toHaveBeenCalledWith('test_collection', expect.objectContaining({
+      filter: expect.objectContaining({
+        must: expect.arrayContaining([
+          expect.objectContaining({ key: 'filePath', match: { any: ['src/orphan.ts'] } }),
+        ]),
+      }),
+    }));
   });
 });

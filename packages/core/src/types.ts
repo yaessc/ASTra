@@ -54,6 +54,22 @@ export interface IndexStats {
   lastIndexed: string | null;
   collectionSize: number;
   vectorSize: number | null;
+  cacheChunkCount?: number;
+}
+
+export interface FileIntegrityEntry {
+  filePath: string;
+  cacheChunkCount: number;
+  qdrantChunkCount: number;
+  status: 'ok' | 'missing' | 'orphaned' | 'mismatch';
+}
+
+export interface IndexVerificationReport {
+  ok: number;
+  missingFromQdrant: number;
+  orphanedInQdrant: number;
+  mismatched: number;
+  details: FileIntegrityEntry[];
 }
 
 export interface IndexedFile {
