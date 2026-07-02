@@ -39,7 +39,7 @@ function getDb(cacheDir: string): Database.Database {
     );
   `);
 
-  const row = conn.prepare('SELECT value FROM metadata WHERE key = ?').get('schema_version') as any;
+  const row = conn.prepare('SELECT value FROM metadata WHERE key = ?').get('schema_version') as { value: string } | undefined;
   if (!row || row.value !== SCHEMA_VERSION) {
     conn.exec('DELETE FROM indexed_files; DELETE FROM indexed_chunks; DELETE FROM metadata;');
     conn.prepare('INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)').run('schema_version', SCHEMA_VERSION);
@@ -51,13 +51,13 @@ function getDb(cacheDir: string): Database.Database {
 
 export function getIndexedFile(cacheDir: string, filePath: string): IndexedFile | null {
   const d = getDb(cacheDir);
-  const row = d.prepare('SELECT path, mtime, hash FROM indexed_files WHERE path = ?').get(filePath) as any;
+  const row = d.prepare('SELECT path, mtime, hash FROM indexed_files WHERE path = ?').get(filePath) as { path: string; mtime: number; hash: string } | undefined;
   return row ? { path: row.path, mtime: row.mtime, hash: row.hash } : null;
 }
 
 export function getAllIndexedFilePaths(cacheDir: string): string[] {
   const d = getDb(cacheDir);
-  const rows = d.prepare('SELECT path FROM indexed_files').all() as any[];
+  const rows = d.prepare('SELECT path FROM indexed_files').all() as { path: string }[];
   return rows.map(r => r.path);
 }
 
@@ -131,7 +131,7 @@ export function storeChunkQdrantIds(
 
 export function getMetadata(cacheDir: string, key: string): string | null {
   const d = getDb(cacheDir);
-  const row = d.prepare('SELECT value FROM metadata WHERE key = ?').get(key) as any;
+  const row = d.prepare('SELECT value FROM metadata WHERE key = ?').get(key) as { value: string } | undefined;
   return row ? row.value : null;
 }
 
@@ -142,7 +142,7 @@ export function setMetadata(cacheDir: string, key: string, value: string): void 
 
 export function getLastIndexedMtime(cacheDir: string): number | null {
   const d = getDb(cacheDir);
-  const row = d.prepare('SELECT MAX(mtime) as mtime FROM indexed_files').get() as any;
+  const row = d.prepare('SELECT MAX(mtime) as mtime FROM indexed_files').get() as { mtime: number } | undefined;
   return row?.mtime ?? null;
 }
 

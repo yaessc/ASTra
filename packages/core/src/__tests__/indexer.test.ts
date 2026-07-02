@@ -32,6 +32,7 @@ vi.mock('../embedder.js', () => ({
 
 import { ensureCollection, indexChunks, deleteFileChunks, deleteFileChunksBatch, resetCollection } from '../indexer.js';
 import { embedBatch } from '../embedder.js';
+import type { QdrantClient } from '@qdrant/js-client-rest';
 
 const mockConfig: AstraConfig = {
   include: ['**/*.ts'],
@@ -50,7 +51,7 @@ function makeMockClient() {
   return {
     delete: mockDelete,
     upsert: mockUpsert,
-  } as any;
+  } as unknown as QdrantClient;
 }
 
 function makeChunk(overrides: Partial<CodeChunk> = {}): CodeChunk {

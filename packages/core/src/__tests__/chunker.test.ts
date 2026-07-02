@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { chunkEntities } from '../chunker.js';
+import type { CodeEntity } from '../types.js';
 
 describe('chunkEntities — metadata guard', () => {
   it('produces only body chunk when docComment is empty and signature is short', () => {
@@ -7,8 +8,8 @@ describe('chunkEntities — metadata guard', () => {
       [{
         docComment: '', signature: 'fn()', startLine: 1, endLine: 5,
         code: 'function fn() {}', filePath: 'a.ts', language: 'typescript',
-        type: 'function', name: 'fn', entity: 'function',
-      }] as any,
+        type: 'function', name: 'fn',
+      }] as CodeEntity[],
       'a.ts', '', 'typescript', { maxChunkSize: 50, maxBodyLines: 150, maxBodyChars: 4000, linesPerBodyChunk: 100 },
     );
     expect(chunks.length).toBe(1);
@@ -46,7 +47,7 @@ describe('chunkEntities — metadata guard', () => {
         { docComment: '', signature: '', startLine: 1, endLine: 1, code: 'import { x } from "./x";', filePath: 'server.ts', language: 'typescript', type: 'variable', name: 'x' },
         { docComment: '', signature: '', startLine: 2, endLine: 2, code: 'const app = createApp();', filePath: 'server.ts', language: 'typescript', type: 'variable', name: 'app' },
         { docComment: '', signature: '', startLine: 7, endLine: 7, code: 'const PORT = 3000;', filePath: 'server.ts', language: 'typescript', type: 'variable', name: 'PORT' },
-      ] as any,
+      ] as CodeEntity[],
       'server.ts', source, 'typescript', { maxChunkSize: 50, maxBodyLines: 150, maxBodyChars: 4000, linesPerBodyChunk: 100 },
     );
 
@@ -64,7 +65,7 @@ describe('chunkEntities — metadata guard', () => {
         docComment: '/** Does x */', signature: 'function doX(): void',
         startLine: 1, endLine: 5, code: 'function doX() {}',
         filePath: 'a.ts', language: 'typescript', type: 'function', name: 'doX',
-      }] as any,
+      }] as CodeEntity[],
       'a.ts', '', 'typescript', { maxChunkSize: 50, maxBodyLines: 150, maxBodyChars: 4000, linesPerBodyChunk: 100 },
     );
     expect(chunks.length).toBe(2);
@@ -81,7 +82,7 @@ describe('chunkEntities — metadata guard', () => {
         startLine: 1, endLine: 15, code,
         filePath: 'a.ts', language: 'typescript',
         type: 'function', name: 'fn',
-      }] as any,
+      }] as CodeEntity[],
       'a.ts', '', 'typescript', {
         maxChunkSize: 50, maxBodyLines: 5, maxBodyChars: 4000,
         linesPerBodyChunk: 10, chunkOverlap: 2,

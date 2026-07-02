@@ -106,7 +106,7 @@ describe('embedBatch', () => {
   }
 
   it('yields one result for a single chunk', async () => {
-    const results: any[] = [];
+    const results: Array<{ chunk: CodeChunk; embedding: number[] }> = [];
     for await (const r of embedBatch([makeChunk('c1')], mockConfig)) {
       results.push(r);
     }
@@ -120,7 +120,7 @@ describe('embedBatch', () => {
       data: new Float32Array(16 * 3),
       dims: [16, 3],
     });
-    const results: any[] = [];
+    const results: Array<{ chunk: CodeChunk; embedding: number[] }> = [];
     for await (const r of embedBatch(chunks, mockConfig)) {
       results.push(r);
     }
@@ -134,7 +134,7 @@ describe('embedBatch', () => {
       data: new Float32Array(16 * 3),
       dims: [16, 3],
     });
-    const results: any[] = [];
+    const results: Array<{ chunk: CodeChunk; embedding: number[] }> = [];
     for await (const r of embedBatch(chunks, mockConfig)) {
       results.push(r);
     }

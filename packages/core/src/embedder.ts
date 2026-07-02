@@ -6,13 +6,22 @@ interface FeatureExtractor {
   (text: string | string[], options?: { pooling?: string; normalize?: boolean }): Promise<{ data: Float32Array; dims?: number[] }>;
 }
 
+interface ModelLoadProgress {
+  status: string;
+  file?: string;
+  progress?: number;
+  loaded?: number;
+  total?: number;
+  name?: string;
+}
+
 let extractor: FeatureExtractor | null = null;
 let loadedModelId: string | null = null;
 let cachedDimension: number | null = null;
 
 export async function initEmbedder(
   config: AstraConfig,
-  onProgress?: (progress: any) => void,
+  onProgress?: (progress: ModelLoadProgress) => void,
 ): Promise<void> {
   if (extractor && loadedModelId === config.modelId) return;
   cachedDimension = null;

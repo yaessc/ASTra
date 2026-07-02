@@ -27,9 +27,9 @@ describe('ConfigValidationError', () => {
     try {
       loadConfig(dir);
       expect.fail('Should have thrown');
-    } catch (err: any) {
-      expect(err.issues).toBeDefined();
-      expect(err.issues.some((i: any) => i.path.includes('maxChunkSize'))).toBe(true);
+    } catch (err) {
+      expect((err as ConfigValidationError).issues).toBeDefined();
+      expect((err as ConfigValidationError).issues.some((i: { path: string; message: string }) => i.path.includes('maxChunkSize'))).toBe(true);
     }
   });
 
