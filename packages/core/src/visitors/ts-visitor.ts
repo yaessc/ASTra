@@ -154,6 +154,7 @@ export const tsHandlers: Record<string, EntityHandler> = {
   public_field_definition: namedEntity('field'),
 
   decorator(node, source, filePath, language) {
+    if (node.parent && !isTopLevel(node.parent)) return null;
     const name = getNodeText(node, source).split(/[(\s]/)[0];
     const range = getNodeRange(node);
     return {

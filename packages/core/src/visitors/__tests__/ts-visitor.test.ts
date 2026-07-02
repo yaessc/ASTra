@@ -52,6 +52,20 @@ describe('ts-visitor handlers', () => {
     expect(entity?.docComment).toBe('/** Doc */');
   });
 
+  it('decorator on class inside function is skipped', () => {
+    const source = 'function createRouter() {\n  @Controller("auth")\n  class AuthController {}\n}';
+    const node = firstNodeOfType(source, 'decorator');
+    const entity = tsHandlers.decorator(node, source, 'a.ts', 'typescript') as CodeEntity | null;
+    expect(entity).toBeNull();
+  });
+
+  it('decorator on method inside top-level class is indexed', () => {
+    const source = 'class Foo {\n  @Get("/")\n  handler() {}\n}';
+    const node = firstNodeOfType(source, 'decorator');
+    const entity = tsHandlers.decorator(node, source, 'a.ts', 'typescript') as CodeEntity | null;
+    expect(entity?.name).toBe('@Get');
+  });
+
   it('arrow function with preceding doc comment extracts docComment', () => {
     const source = `/** Greet a user by name */\nconst greet = (name: string) => name;`;
     const node = firstNodeOfType(source, 'variable_declarator');
