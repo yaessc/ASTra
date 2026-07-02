@@ -150,8 +150,9 @@ describe('scanFiles', () => {
     writeFileSync(join(fixtureDir, 'src', 'app.ts'), 'const a = 1;');
     writeFileSync(join(fixtureDir, 'src', 'app.tsx'), '<div />;');
     writeFileSync(join(fixtureDir, 'src', 'app.js'), 'const a = 1;');
+    writeFileSync(join(fixtureDir, 'src', 'app.jsx'), '<div />;');
 
-    const result = scanFiles(fixtureDir, makeConfig({ include: ['src/**/*.ts', 'src/**/*.tsx', 'src/**/*.js'] }));
+    const result = scanFiles(fixtureDir, makeConfig({ include: ['src/**/*.ts', 'src/**/*.tsx', 'src/**/*.js', 'src/**/*.jsx'] }));
     const langMap: Record<string, string> = {};
     for (const f of result.files) {
       langMap[f.relativePath] = f.language;
@@ -159,6 +160,7 @@ describe('scanFiles', () => {
     expect(langMap['src/app.ts']).toBe('typescript');
     expect(langMap['src/app.tsx']).toBe('tsx');
     expect(langMap['src/app.js']).toBe('javascript');
+    expect(langMap['src/app.jsx']).toBe('tsx');
   });
 });
 
