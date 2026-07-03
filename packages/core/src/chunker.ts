@@ -9,6 +9,15 @@ export interface ChunkOptions {
   chunkOverlap: number;
 }
 
+function filePathHash(fp: string): string {
+  let hash = 5381;
+  for (let i = 0; i < fp.length; i++) {
+    hash = ((hash << 5) + hash) + fp.charCodeAt(i);
+    hash |= 0;
+  }
+  return (hash >>> 0).toString(36).padStart(7, '0');
+}
+
 const MIN_META_LENGTH = 10;
 
 export function chunkEntities(
@@ -27,7 +36,7 @@ export function chunkEntities(
       const content = lines.slice(i, chunkEnd).join('\n');
       if (content.trim().length === 0) continue;
       chunks.push({
-        id: `${filePath}:${i + 1}-${chunkEnd}:body`,
+        id: `${filePathHash(filePath)}:${i + 1}-${chunkEnd}:body`,
         filePath,
         startLine: i + 1,
         endLine: chunkEnd,
@@ -51,7 +60,7 @@ export function chunkEntities(
 
     if (metaContent.length >= MIN_META_LENGTH) {
       chunks.push({
-        id: `${filePath}:${entity.startLine}-${entity.endLine}:${entity.name}:${entity.type}:meta`,
+        id: `${filePathHash(filePath)}:${entity.startLine}-${entity.endLine}:${entity.name}:${entity.type}:meta`,
         filePath,
         startLine: entity.startLine,
         endLine: entity.endLine,
@@ -67,7 +76,7 @@ export function chunkEntities(
 
     if (totalLines <= options.maxBodyLines && entity.code.length <= options.maxBodyChars) {
       chunks.push({
-        id: `${filePath}:${entity.startLine}-${entity.endLine}:${entity.name}:${entity.type}:body`,
+        id: `${filePathHash(filePath)}:${entity.startLine}-${entity.endLine}:${entity.name}:${entity.type}:body`,
         filePath,
         startLine: entity.startLine,
         endLine: entity.endLine,
@@ -88,7 +97,7 @@ export function chunkEntities(
         const chunkEndLine = Math.min(chunkStartLine + chunkSize - 1, entity.endLine);
 
         chunks.push({
-          id: `${filePath}:${entity.startLine}-${entity.endLine}:${entity.name}:${entity.type}:body:${seqIndex}`,
+          id: `${filePathHash(filePath)}:${entity.startLine}-${entity.endLine}:${entity.name}:${entity.type}:body:${seqIndex}`,
           filePath,
           startLine: chunkStartLine,
           endLine: chunkEndLine,
@@ -133,7 +142,7 @@ export function chunkEntities(
       const content = lineList.slice(i - 1, chunkEnd).join('\n');
       if (content.trim().length === 0) continue;
       chunks.push({
-        id: `${filePath}:${i}-${chunkEnd}:body`,
+        id: `${filePathHash(filePath)}:${i}-${chunkEnd}:body`,
         filePath,
         startLine: i,
         endLine: chunkEnd,
