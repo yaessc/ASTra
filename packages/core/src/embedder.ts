@@ -6,7 +6,7 @@ interface FeatureExtractor {
   (text: string | string[], options?: { pooling?: string; normalize?: boolean }): Promise<{ data: Float32Array; dims?: number[] }>;
 }
 
-interface ModelLoadProgress {
+export interface ModelLoadProgress {
   status: string;
   file?: string;
   progress?: number;

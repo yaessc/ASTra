@@ -180,7 +180,7 @@ describe('queryCommand', () => {
       linesPerBodyChunk: 100, chunkOverlap: 25,
     });
     mockInitEmbedder.mockResolvedValue(undefined);
-    mockEnsureCollection.mockResolvedValue({} as any);
+    mockEnsureCollection.mockResolvedValue({} as never);
     mockSearchHybrid.mockResolvedValue([]);
 
     await queryCommand('nonexistent query', { limit: '10', mode: 'hybrid' });

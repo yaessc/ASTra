@@ -10,6 +10,7 @@ export { parseFile } from './parser.js';
 export { extractEntities } from './entities.js';
 export { chunkEntities } from './chunker.js';
 export { initEmbedder, embedText, embedBatch, getEmbeddingDimension } from './embedder.js';
+export type { ModelLoadProgress } from './embedder.js';
 export {
   ensureCollection, indexChunks, deleteFileChunks, deleteFileChunksBatch,
   getIndexStats, resetCollection, verifyIndexIntegrity, repairIndex,

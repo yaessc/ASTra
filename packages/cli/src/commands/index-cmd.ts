@@ -5,7 +5,7 @@ import {
   getIndexedFile, getAllIndexedFilePaths,
   removeIndexedFilesBatch, removeIndexedChunksBatch, deleteFileChunksBatch,
   getCacheDir, closeCache, wasCacheReset, ConfigValidationError, QdrantConnectionError,
-  type ScannedFile, type IndexedFile, type CodeChunk,
+  type ScannedFile, type IndexedFile, type CodeChunk, type ModelLoadProgress,
 } from '@astra/core';
 import { intro, spinner, note, outro } from '@clack/prompts';
 import pico from 'picocolors';
@@ -47,7 +47,7 @@ export async function indexCommand(dir: string = '.'): Promise<void> {
     let lastFile = '';
     const DOWNLOAD_FMT = `${pico.cyan('Downloading')} ${pico.dim('{file}')} |{bar}| ${pico.green('{percentage}%')} {loadedMb}/{totalMb} MB`;
 
-    await initEmbedder(config, (progress: any) => {
+    await initEmbedder(config, (progress: ModelLoadProgress) => {
       if (progress.status === 'initiate') {
         lastFile = progress.file || '';
         if (!modelBar.isRunning) {

@@ -1,7 +1,7 @@
 import {
   loadConfig, initEmbedder, searchHybrid,
   ensureCollection, ConfigValidationError, QdrantConnectionError,
-  type SearchMode, type AstraConfig, type SearchResult,
+  type SearchMode, type AstraConfig, type SearchResult, type ModelLoadProgress,
 } from '@astra/core';
 import { intro, spinner, note, outro, text, select, isCancel } from '@clack/prompts';
 import pico from 'picocolors';
@@ -307,7 +307,7 @@ export async function queryCommand(query?: string, options?: { limit?: string; m
   const DOWNLOAD_FMT = `${pico.cyan('Downloading')} ${pico.dim('{file}')} |{bar}| ${pico.green('{percentage}%')} {loadedMb}/{totalMb} MB`;
 
   try {
-    await initEmbedder(config, (progress: any) => {
+    await initEmbedder(config, (progress: ModelLoadProgress) => {
       if (progress.status === 'initiate') {
         lastFile = progress.file || '';
         if (!modelBar.isRunning) {
