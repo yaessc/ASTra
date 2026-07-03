@@ -8,7 +8,7 @@ export default tseslint.config(
     files: ['packages/*/src/**/*.ts'],
     rules: {
       '@typescript-eslint/no-explicit-any': 'warn',
-      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', ignoreRestSiblings: true }],
     },
   },
   { ignores: ['**/dist/**', '**/node_modules/**'] },
