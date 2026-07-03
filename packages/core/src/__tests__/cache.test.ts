@@ -6,6 +6,7 @@ import {
   getCacheDir, getIndexedFile, getAllIndexedFilePaths,
   setIndexedFile, setIndexedFiles, removeIndexedFile,
   removeIndexedChunks, removeIndexedChunksBatch, removeIndexedFilesBatch, storeChunkQdrantIds,
+  getChunkQdrantIdsByFilePaths,
   getMetadata, setMetadata, getLastIndexedMtime,
   clearCache, closeCache,
 } from '../cache.js';
@@ -160,6 +161,56 @@ describe('CRUD operations', () => {
     storeChunkQdrantIds(cacheDir, [
       { chunkId: 'c1', filePath: 'a.ts', startLine: 1, endLine: 5, qdrantId: 'q1' },
     ]);
+  });
+});
+
+describe('getChunkQdrantIdsByFilePaths', () => {
+  it('returns empty array for empty input', () => {
+    expect(getChunkQdrantIdsByFilePaths(cacheDir, [])).toEqual([]);
+  });
+
+  it('returns qdrant_ids for matching file paths', () => {
+    storeChunkQdrantIds(cacheDir, [
+      { chunkId: 'c1', filePath: 'a.ts', startLine: 1, endLine: 5, qdrantId: 'q1' },
+      { chunkId: 'c2', filePath: 'b.ts', startLine: 1, endLine: 5, qdrantId: 'q2' },
+    ]);
+    const ids = getChunkQdrantIdsByFilePaths(cacheDir, ['a.ts']);
+    expect(ids).toEqual(['q1']);
+  });
+
+  it('returns IDs from multiple file paths', () => {
+    storeChunkQdrantIds(cacheDir, [
+      { chunkId: 'c1', filePath: 'a.ts', startLine: 1, endLine: 5, qdrantId: 'q1' },
+      { chunkId: 'c2', filePath: 'b.ts', startLine: 1, endLine: 5, qdrantId: 'q2' },
+    ]);
+    const ids = getChunkQdrantIdsByFilePaths(cacheDir, ['a.ts', 'b.ts']);
+    expect(ids).toEqual(['q1', 'q2']);
+  });
+
+  it('returns empty when no paths match', () => {
+    storeChunkQdrantIds(cacheDir, [
+      { chunkId: 'c1', filePath: 'a.ts', startLine: 1, endLine: 5, qdrantId: 'q1' },
+    ]);
+    const ids = getChunkQdrantIdsByFilePaths(cacheDir, ['nonexistent.ts']);
+    expect(ids).toEqual([]);
+  });
+
+  it('handles batch larger than CHUNK_SIZE without SQLite param overflow', () => {
+    const mappings = Array.from({ length: 600 }, (_, i) => ({
+      chunkId: `c${i}`,
+      filePath: `file-${i}.ts`,
+      startLine: 1,
+      endLine: 5,
+      qdrantId: `q${i}`,
+    }));
+    storeChunkQdrantIds(cacheDir, mappings);
+
+    const paths = Array.from({ length: 600 }, (_, i) => `file-${i}.ts`);
+    const ids = getChunkQdrantIdsByFilePaths(cacheDir, paths);
+
+    expect(ids).toHaveLength(600);
+    expect(ids).toContain('q0');
+    expect(ids).toContain('q599');
   });
 });
 

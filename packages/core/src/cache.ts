@@ -4,6 +4,7 @@ import { existsSync, mkdirSync } from 'node:fs';
 import type { IndexedFile } from './types.js';
 
 const SCHEMA_VERSION = '4';
+const CHUNK_SIZE = 500;
 
 const databases = new Map<string, Database.Database>();
 const resetFlags = new Map<string, boolean>();
@@ -117,11 +118,18 @@ export function removeIndexedChunksBatch(cacheDir: string, filePaths: string[]):
 export function getChunkQdrantIdsByFilePaths(cacheDir: string, filePaths: string[]): string[] {
   if (filePaths.length === 0) return [];
   const d = getDb(cacheDir);
-  const placeholders = filePaths.map(() => '?').join(',');
-  const rows = d.prepare(
-    `SELECT qdrant_id FROM indexed_chunks WHERE file_path IN (${placeholders})`
-  ).all(...filePaths) as { qdrant_id: string }[];
-  return rows.map(r => r.qdrant_id).filter((id): id is string => id != null);
+  const allIds: string[] = [];
+
+  for (let i = 0; i < filePaths.length; i += CHUNK_SIZE) {
+    const batch = filePaths.slice(i, i + CHUNK_SIZE);
+    const placeholders = batch.map(() => '?').join(',');
+    const rows = d.prepare(
+      `SELECT qdrant_id FROM indexed_chunks WHERE file_path IN (${placeholders})`
+    ).all(...batch) as { qdrant_id: string }[];
+    allIds.push(...rows.map(r => r.qdrant_id).filter((id): id is string => id != null));
+  }
+
+  return allIds;
 }
 
 export function storeChunkQdrantIds(
