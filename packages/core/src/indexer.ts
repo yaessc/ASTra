@@ -265,7 +265,7 @@ async function scrollAllQdrantPoints(config: AstraConfig): Promise<Map<string, n
       }
     }
     offset = result.next_page_offset;
-  } while (offset);
+  } while (offset != null);
   return fileCountMap;
 }
 

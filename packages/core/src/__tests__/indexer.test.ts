@@ -384,6 +384,33 @@ describe('verifyIndexIntegrity', () => {
     expect(report.ok).toBe(1);
     expect(mockScroll).toHaveBeenCalledTimes(2);
   });
+
+  it('paginates when next_page_offset is 0 (falsy but valid)', async () => {
+    mockCacheData = {
+      getAllIndexedFilePaths: ['src/a.ts'],
+      getAllChunkByFilePath: new Map([['src/a.ts', ['uuid-1', 'uuid-2']]]),
+      getChunkCount: 2,
+    };
+
+    mockScroll
+      .mockResolvedValueOnce({
+        points: [
+          { id: 'uuid-1', payload: { filePath: 'src/a.ts' } },
+        ],
+        next_page_offset: 0,
+      })
+      .mockResolvedValueOnce({
+        points: [
+          { id: 'uuid-2', payload: { filePath: 'src/a.ts' } },
+        ],
+        next_page_offset: null,
+      });
+
+    const report = await verifyIndexIntegrity(mockConfig, '/tmp');
+
+    expect(report.ok).toBe(1);
+    expect(mockScroll).toHaveBeenCalledTimes(2);
+  });
 });
 
 describe('repairIndex', () => {
