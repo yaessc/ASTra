@@ -73,20 +73,43 @@ describe('formatCodeForEmbedding', () => {
 });
 
 describe('getEmbeddingDimension', () => {
-  it('runs inference and caches result across calls', async () => {
-    mockPipeline.mockResolvedValue({ data: new Float32Array([0.1, 0.2, 0.3]), dims: [1, 3] });
+  it('returns known dimension from table without inference', async () => {
     const { getEmbeddingDimension } = await import('../embedder.js');
-    const dim1 = await getEmbeddingDimension(mockConfig);
-    expect(dim1).toBe(3);
-    const dim2 = await getEmbeddingDimension(mockConfig);
-    expect(dim2).toBe(3);
+    const dim = await getEmbeddingDimension(mockConfig);
+    expect(dim).toBe(384);
+    expect(mockPipeline).not.toHaveBeenCalled();
   });
 
-  it('falls back to 384 when dims is undefined', async () => {
+  it('caches known dimension across calls', async () => {
+    vi.resetModules();
+    const { getEmbeddingDimension } = await import('../embedder.js');
+    await getEmbeddingDimension(mockConfig);
+    await getEmbeddingDimension(mockConfig);
+    expect(mockPipeline).not.toHaveBeenCalled();
+  });
+
+  it('runs inference for unknown models', async () => {
+    vi.resetModules();
+    mockPipeline.mockResolvedValue({ data: new Float32Array([0.1, 0.2, 0.3]), dims: [1, 3] });
+    const { getEmbeddingDimension } = await import('../embedder.js');
+    const dim = await getEmbeddingDimension({ ...mockConfig, modelId: 'unknown-model' });
+    expect(dim).toBe(3);
+  });
+
+  it('caches inference result across calls for unknown models', async () => {
+    vi.resetModules();
+    mockPipeline.mockResolvedValue({ data: new Float32Array([0.1, 0.2, 0.3]), dims: [1, 3] });
+    const { getEmbeddingDimension } = await import('../embedder.js');
+    await getEmbeddingDimension({ ...mockConfig, modelId: 'unknown-model' });
+    await getEmbeddingDimension({ ...mockConfig, modelId: 'unknown-model' });
+    expect(mockPipeline).toHaveBeenCalledTimes(1);
+  });
+
+  it('falls back to 384 when dims is undefined for unknown model', async () => {
     vi.resetModules();
     mockPipeline.mockResolvedValue({ data: new Float32Array(384), dims: undefined });
     const { getEmbeddingDimension } = await import('../embedder.js');
-    const dim = await getEmbeddingDimension(mockConfig);
+    const dim = await getEmbeddingDimension({ ...mockConfig, modelId: 'unknown-model' });
     expect(dim).toBe(384);
   });
 });

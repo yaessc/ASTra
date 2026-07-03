@@ -15,6 +15,19 @@ interface ModelLoadProgress {
   name?: string;
 }
 
+const KNOWN_DIMENSIONS: Record<string, number> = {
+  'Xenova/all-MiniLM-L6-v2': 384,
+  'Xenova/all-mpnet-base-v2': 768,
+  'Xenova/bge-small-en-v1.5': 384,
+  'Xenova/bge-base-en-v1.5': 768,
+  'Xenova/bge-large-en-v1.5': 1024,
+  'Xenova/multilingual-e5-small': 384,
+  'Xenova/multilingual-e5-base': 768,
+  'Xenova/multilingual-e5-large': 1024,
+  'Xenova/gte-small': 384,
+  'Xenova/gte-base': 768,
+};
+
 let extractor: FeatureExtractor | null = null;
 let loadedModelId: string | null = null;
 let cachedDimension: number | null = null;
@@ -38,6 +51,13 @@ export async function initEmbedder(
 
 export async function getEmbeddingDimension(config: AstraConfig): Promise<number> {
   if (cachedDimension !== null) return cachedDimension;
+
+  const known = KNOWN_DIMENSIONS[config.modelId];
+  if (known !== undefined) {
+    cachedDimension = known;
+    return known;
+  }
+
   if (!extractor) await initEmbedder(config);
   const result = await extractor!('test', { pooling: 'mean', normalize: true });
   const dims = result.dims;
