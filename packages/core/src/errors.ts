@@ -43,9 +43,8 @@ export function wrapQdrantError(err: unknown, url: string): QdrantConnectionErro
 }
 
 export function isQdrantNotFoundError(err: unknown): boolean {
-  if (!(err instanceof Error)) return false;
-  const candidate = err instanceof QdrantConnectionError
-    ? (err.cause as Record<string, unknown> | undefined)
-    : err;
-  return candidate !== null && typeof candidate === 'object' && (candidate as Record<string, unknown>).status === 404;
+  if (!(err instanceof QdrantConnectionError)) return false;
+  return err.cause != null
+    && typeof err.cause === 'object'
+    && (err.cause as Record<string, unknown>).status === 404;
 }
