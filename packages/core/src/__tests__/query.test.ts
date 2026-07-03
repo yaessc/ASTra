@@ -65,17 +65,17 @@ describe('toQdrantPayload', () => {
     expect(p.language).toBe('typescript');
   });
 
-  it('coerces wrong types to defaults', () => {
+  it('falls back to defaults for wrong types', () => {
     const p = toQdrantPayload({
       filePath: 42,
       startLine: 'abc',
       entities: 'not-an-array',
       code: true,
     });
-    expect(p.filePath).toBe('42');
-    expect(p.startLine).toBeNaN();
+    expect(p.filePath).toBe('');
+    expect(p.startLine).toBe(0);
     expect(p.entities).toEqual([]);
-    expect(p.code).toBe('true');
+    expect(p.code).toBe('');
   });
 });
 

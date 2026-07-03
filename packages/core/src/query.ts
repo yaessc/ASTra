@@ -1,23 +1,37 @@
 import type { AstraConfig, CodeEntity, SearchResult, QdrantCodeChunkPayload, SupportedLanguage } from './types.js';
 import { embedText } from './embedder.js';
 import { createClient, safeQdrantCall } from './qdrant.js';
+import { z } from 'zod';
 
 export type SearchMode = 'vector' | 'keyword' | 'hybrid';
 
+const EntityPayloadItemSchema = z.object({
+  type: z.enum(['function', 'method', 'class', 'interface', 'type', 'enum', 'variable', 'decorator', 'export', 'import', 'field']),
+  name: z.string(),
+  filePath: z.string().optional(),
+  startLine: z.number().optional(),
+  endLine: z.number().optional(),
+  signature: z.string().optional(),
+  docComment: z.string().optional(),
+  language: z.enum(['typescript', 'javascript', 'tsx']).optional(),
+});
+
+const QdrantPayloadSchema = z.object({
+  filePath: z.string().catch(''),
+  startLine: z.number().catch(0),
+  endLine: z.number().catch(0),
+  entityTypes: z.array(z.string()).catch([]),
+  entityNames: z.array(z.string()).catch([]),
+  firstEntitySignature: z.string().catch(''),
+  entities: z.array(EntityPayloadItemSchema).catch([]),
+  entitiesJson: z.string().catch('[]'),
+  code: z.string().catch(''),
+  language: z.string().catch('typescript'),
+  chunkType: z.string().catch('body'),
+});
+
 export function toQdrantPayload(payload: Record<string, unknown> | null | undefined): QdrantCodeChunkPayload {
-  return {
-    filePath: String(payload?.filePath ?? ''),
-    startLine: Number(payload?.startLine ?? 0),
-    endLine: Number(payload?.endLine ?? 0),
-    entityTypes: Array.isArray(payload?.entityTypes) ? payload.entityTypes as string[] : [],
-    entityNames: Array.isArray(payload?.entityNames) ? payload.entityNames as string[] : [],
-    firstEntitySignature: String(payload?.firstEntitySignature ?? ''),
-    entities: Array.isArray(payload?.entities) ? payload.entities as Omit<CodeEntity, 'code'>[] : [],
-    entitiesJson: String(payload?.entitiesJson ?? '[]'),
-    code: String(payload?.code ?? ''),
-    language: String(payload?.language ?? 'typescript'),
-    chunkType: String(payload?.chunkType ?? 'body'),
-  };
+  return QdrantPayloadSchema.parse(payload ?? {}) as QdrantCodeChunkPayload;
 }
 
 export function mapResult(r: {
