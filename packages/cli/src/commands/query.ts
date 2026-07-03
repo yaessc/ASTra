@@ -334,26 +334,20 @@ export async function queryCommand(query?: string, options?: { limit?: string; m
       }
     });
 
-    try {
-      const warnings: string[] = [];
-      await ensureCollection(config, (msg) => { warnings.push(msg); });
-      s.stop('Ready');
-      for (const w of warnings) {
-        note(w, 'Warning');
-      }
-    } catch (err) {
-      if (err instanceof QdrantConnectionError) {
-        s.stop('Qdrant not reachable');
-        note(err.message, 'Qdrant Error');
-        outro('Done');
-        return;
-      }
-      throw err;
+    const warnings: string[] = [];
+    await ensureCollection(config, (msg) => { warnings.push(msg); });
+    s.stop('Ready');
+    for (const w of warnings) {
+      note(w, 'Warning');
     }
   } catch (err) {
     modelBar.stop();
     s.stop('Initialization failed');
-    note(err instanceof Error ? err.message : String(err), 'Error');
+    if (err instanceof QdrantConnectionError) {
+      note(err.message, 'Qdrant Error');
+    } else {
+      note(err instanceof Error ? err.message : String(err), 'Error');
+    }
     outro('Done');
     return;
   }
