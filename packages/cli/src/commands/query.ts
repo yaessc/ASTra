@@ -103,11 +103,13 @@ function spawnAsync(cmd: string, args: string[]): Promise<void> {
 
 async function openInEditor(filePath: string, line: number, rootDir: string): Promise<void> {
   const fullPath = join(rootDir, filePath);
+  const attempts: string[] = [];
+
   try {
     await spawnAsync('code', ['-g', `${fullPath}:${line}`]);
     return;
   } catch {
-    // VSCode not available — fall through
+    attempts.push('VSCode (code)');
   }
 
   const editor = process.env.EDITOR;
@@ -117,8 +119,7 @@ async function openInEditor(filePath: string, line: number, rootDir: string): Pr
       await spawnAsync(cmd, [...args, fullPath, `+${line}`]);
       return;
     } catch {
-      note(`Could not open with EDITOR="${editor}". File: ${fullPath}:${line}`, 'Open Failed');
-      return;
+      attempts.push(`EDITOR="${editor}"`);
     }
   }
 
@@ -130,9 +131,18 @@ async function openInEditor(filePath: string, line: number, rootDir: string): Pr
     } else {
       await spawnAsync('xdg-open', [fullPath]);
     }
+    return;
   } catch {
-    note(`Could not open editor. File: ${fullPath}:${line}`, 'Open Failed');
+    const platform = process.platform === 'win32' ? 'start'
+      : process.platform === 'darwin' ? 'open'
+      : 'xdg-open';
+    attempts.push(platform);
   }
+
+  note(
+    `Could not open file. Tried: ${attempts.join(', ')}.\nFile: ${fullPath}:${line}`,
+    'Open Failed',
+  );
 }
 
 async function runSearch(query: string, limit: number, mode: SearchMode, config: AstraConfig): Promise<SearchResult[]> {
