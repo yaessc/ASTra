@@ -77,6 +77,21 @@ describe('toQdrantPayload', () => {
     expect(p.entities).toEqual([]);
     expect(p.code).toBe('');
   });
+
+  it('keeps valid entities when one has unknown type', () => {
+    const p = toQdrantPayload({
+      entities: [
+        { type: 'function', name: 'valid' },
+        { type: 'future_type', name: 'weird' },
+        { type: 'variable', name: 'also_valid' },
+      ],
+    });
+    expect(p.entities).toHaveLength(3);
+    expect(p.entities[0].name).toBe('valid');
+    expect(p.entities[0].type).toBe('function');
+    expect(p.entities[1].type).toBe('function');
+    expect(p.entities[2].type).toBe('variable');
+  });
 });
 
 describe('mapResult', () => {

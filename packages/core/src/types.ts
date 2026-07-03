@@ -1,5 +1,10 @@
 export type SupportedLanguage = 'typescript' | 'javascript' | 'tsx';
 
+export const ENTITY_TYPES = [
+  'function', 'method', 'class', 'interface', 'type',
+  'enum', 'variable', 'decorator', 'export', 'import', 'field',
+] as const;
+
 export interface AstraConfig {
   include: string[];
   exclude: string[];

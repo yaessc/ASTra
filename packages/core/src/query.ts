@@ -1,4 +1,5 @@
 import type { AstraConfig, CodeEntity, SearchResult, QdrantCodeChunkPayload, SupportedLanguage } from './types.js';
+import { ENTITY_TYPES } from './types.js';
 import { embedText } from './embedder.js';
 import { createClient, safeQdrantCall } from './qdrant.js';
 import { z } from 'zod';
@@ -6,7 +7,7 @@ import { z } from 'zod';
 export type SearchMode = 'vector' | 'keyword' | 'hybrid';
 
 const EntityPayloadItemSchema = z.object({
-  type: z.enum(['function', 'method', 'class', 'interface', 'type', 'enum', 'variable', 'decorator', 'export', 'import', 'field']),
+  type: z.enum(ENTITY_TYPES).catch('function'),
   name: z.string(),
   filePath: z.string().optional(),
   startLine: z.number().optional(),
