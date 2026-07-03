@@ -98,7 +98,7 @@ export interface QdrantCodeChunkPayload {
   entityNames: string[];
   firstEntitySignature: string;
   entities: Omit<CodeEntity, 'code'>[];
-  entitiesJson: string;
+  entitiesJson?: string;
   code: string;
   language: string;
   chunkType: string;

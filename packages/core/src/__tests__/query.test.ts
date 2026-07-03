@@ -31,7 +31,7 @@ describe('toQdrantPayload', () => {
     expect(p.startLine).toBe(0);
     expect(p.endLine).toBe(0);
     expect(p.entities).toEqual([]);
-    expect(p.entitiesJson).toBe('[]');
+    expect(p.entitiesJson).toBeUndefined();
     expect(p.code).toBe('');
     expect(p.language).toBe('typescript');
     expect(p.chunkType).toBe('body');

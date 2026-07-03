@@ -16,7 +16,7 @@ function chunkToPayload(chunk: CodeChunk, maxBodyChars: number) {
     entityNames: chunk.entities.map(e => e.name),
     firstEntitySignature: chunk.entities[0]?.signature || '',
     entities,
-    entitiesJson: JSON.stringify(entities),
+
     code: chunk.content.slice(0, maxBodyChars),
     language: chunk.language,
     chunkType: chunk.chunkType,

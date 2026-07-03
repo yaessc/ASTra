@@ -24,7 +24,7 @@ const QdrantPayloadSchema = z.object({
   entityNames: z.array(z.string()).catch([]),
   firstEntitySignature: z.string().catch(''),
   entities: z.array(EntityPayloadItemSchema).catch([]),
-  entitiesJson: z.string().catch('[]'),
+  entitiesJson: z.string().optional().catch(undefined),
   code: z.string().catch(''),
   language: z.string().catch('typescript'),
   chunkType: z.string().catch('body'),
@@ -49,7 +49,7 @@ export function mapResult(r: {
     code: p.code,
     entities: p.entities.length > 0
       ? p.entities.map(e => ({ ...e, code: '' }) as CodeEntity)
-      : p.entitiesJson !== '[]'
+      : p.entitiesJson
         ? (JSON.parse(p.entitiesJson) as Array<Record<string, unknown>>).map(e => ({ ...e, code: '' }) as CodeEntity)
         : [],
     language: p.language as SupportedLanguage,
