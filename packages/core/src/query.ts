@@ -47,13 +47,11 @@ export function mapResult(r: {
     endLine: p.endLine,
     score: r.score ?? 0,
     code: p.code,
-    entities: (
-      p.entities.length > 0
-        ? p.entities as unknown as CodeEntity[]
-        : p.entitiesJson !== '[]'
-          ? JSON.parse(p.entitiesJson) as CodeEntity[]
-          : []
-    ),
+    entities: p.entities.length > 0
+      ? p.entities.map(e => ({ ...e, code: '' }) as CodeEntity)
+      : p.entitiesJson !== '[]'
+        ? (JSON.parse(p.entitiesJson) as Array<Record<string, unknown>>).map(e => ({ ...e, code: '' }) as CodeEntity)
+        : [],
     language: p.language as SupportedLanguage,
     chunkType: p.chunkType as 'metadata' | 'body',
   };
