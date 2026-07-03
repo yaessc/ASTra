@@ -55,8 +55,8 @@ export async function indexCommand(dir: string = '.'): Promise<void> {
         }
       }
       if (progress.status === 'progress' && modelBar.isRunning) {
-        const totalMb = (progress.total / 1024 / 1024).toFixed(1);
-        const loadedMb = (progress.loaded / 1024 / 1024).toFixed(1);
+        const totalMb = ((progress.total ?? 0) / 1024 / 1024).toFixed(1);
+        const loadedMb = ((progress.loaded ?? 0) / 1024 / 1024).toFixed(1);
         modelBar.update(progress.progress ?? 0, { file: lastFile, loadedMb, totalMb });
       }
       if (progress.status === 'done' || progress.status === 'ready') {
