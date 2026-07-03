@@ -80,8 +80,9 @@ export async function indexChunks(
   rootDir: string,
   client?: QdrantClient,
   onProgress?: (indexedCount: number) => void,
+  onWarning?: (message: string) => void,
 ): Promise<void> {
-  const qdrantClient = client ?? await ensureCollection(config);
+  const qdrantClient = client ?? await ensureCollection(config, onWarning);
   const cacheDir = getCacheDir(rootDir);
 
   const filePaths = [...new Set(chunks.map(c => c.filePath))];
