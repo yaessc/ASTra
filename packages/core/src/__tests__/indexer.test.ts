@@ -57,7 +57,7 @@ import {
   verifyIndexIntegrity, repairIndex,
 } from '../indexer.js';
 import { clearClientCache } from '../qdrant.js';
-import { getAllIndexedFilePaths, getAllChunkByFilePath } from '../cache.js';
+import { getAllIndexedFilePaths, getAllChunkByFilePath, removeIndexedFilesBatch, removeIndexedChunksBatch } from '../cache.js';
 import { embedBatch } from '../embedder.js';
 import type { QdrantClient } from '@qdrant/js-client-rest';
 
@@ -467,5 +467,9 @@ describe('repairIndex', () => {
         ]),
       }),
     }));
+
+    // missing path was removed from cache in batch transactions
+    expect(vi.mocked(removeIndexedFilesBatch)).toHaveBeenCalledWith('/tmp/test-cache', ['src/missing.ts']);
+    expect(vi.mocked(removeIndexedChunksBatch)).toHaveBeenCalledWith('/tmp/test-cache', ['src/missing.ts']);
   });
 });

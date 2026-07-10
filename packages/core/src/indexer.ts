@@ -331,9 +331,9 @@ export async function repairIndex(config: AstraConfig, rootDir: string): Promise
   }
 
   const removeFromCache = [...missingPaths, ...mismatchedPaths];
-  for (const fp of removeFromCache) {
-    removeIndexedFile(cacheDir, fp);
-    removeIndexedChunks(cacheDir, fp);
+  if (removeFromCache.length > 0) {
+    removeIndexedFilesBatch(cacheDir, removeFromCache);
+    removeIndexedChunksBatch(cacheDir, removeFromCache);
   }
 
   return verifyIndexIntegrity(config, rootDir);
