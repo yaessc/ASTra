@@ -47,6 +47,16 @@ flowchart TD
     style K fill:#276749,color:#fff
 ```
 
+## Prerequisites
+
+- **Node.js** >= 20 (or the version in your `package.json` `engines` field)
+- **npm** >= 10
+- **C++ compiler toolchain** — required by the native `better-sqlite3` module:
+  - **Linux**: `python3`, `make`, `gcc`, `g++` (`sudo apt install build-essential`)
+  - **macOS**: Xcode Command Line Tools (`xcode-select --install`)
+  - **Windows**: Visual Studio Build Tools (see [node-gyp docs](https://github.com/nodejs/node-gyp#on-windows))
+- **Docker** — for running Qdrant (see `docker-compose.yml`)
+
 ## Quick start
 
 ```bash
@@ -141,7 +151,7 @@ semantic-code-search/
 │           │   └── status.ts    # astra status
 │           └── utils/
 │               └── progress.ts  # Progress bar manager (cli-progress)
-├── docker-compose.yml     # Qdrant vector DB (latest image)
+├── docker-compose.yml     # Qdrant vector DB (v1.18.2)
 ├── tsconfig.base.json     # Shared TS config
 ├── turbo.json             # Turborepo task definitions
 └── astra.config.json      # User configuration
@@ -208,7 +218,7 @@ Running `astra query` without arguments starts a REPL:
 |-----------|-----------|
 | AST Parser | `web-tree-sitter` (WASM, TypeScript/JavaScript) |
 | Embeddings | `Xenova/all-MiniLM-L6-v2` via `@huggingface/transformers` v3 |
-| Vector DB | Qdrant (Docker), Cosine distance, 384-dim dense + BM25 sparse vectors |
+| Vector DB | Qdrant (Docker v1.18.2), Cosine distance, 384-dim dense + BM25 sparse vectors |
 | Search modes | Vector (dense) + BM25 keyword (sparse) + Hybrid (RRF fusion, k=60) |
 | Cache | SQLite via `better-sqlite3` (per-project, `.astra/cache/`) |
 | Config validation | Zod |
