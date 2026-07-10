@@ -2,12 +2,22 @@ import { QdrantClient } from '@qdrant/js-client-rest';
 import type { AstraConfig } from './types.js';
 import { wrapQdrantError, QdrantConnectionError } from './errors.js';
 
+const clientCache = new Map<string, QdrantClient>();
+
 export function createClient(config: AstraConfig): QdrantClient {
+  const existing = clientCache.get(config.qdrantUrl);
+  if (existing) return existing;
   try {
-    return new QdrantClient({ url: config.qdrantUrl });
+    const client = new QdrantClient({ url: config.qdrantUrl });
+    clientCache.set(config.qdrantUrl, client);
+    return client;
   } catch (err) {
     throw wrapQdrantError(err, config.qdrantUrl);
   }
+}
+
+export function clearClientCache(): void {
+  clientCache.clear();
 }
 
 export async function safeQdrantCall<T>(fn: () => Promise<T>, config: AstraConfig): Promise<T> {

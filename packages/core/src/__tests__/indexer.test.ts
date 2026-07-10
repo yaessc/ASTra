@@ -56,6 +56,7 @@ import {
   ensureCollection, indexChunks, deleteFileChunks, deleteFileChunksBatch, resetCollection,
   verifyIndexIntegrity, repairIndex,
 } from '../indexer.js';
+import { clearClientCache } from '../qdrant.js';
 import { embedBatch } from '../embedder.js';
 import type { QdrantClient } from '@qdrant/js-client-rest';
 
@@ -94,6 +95,7 @@ function makeChunk(overrides: Partial<CodeChunk> = {}): CodeChunk {
 }
 
 beforeEach(() => {
+  clearClientCache();
   vi.clearAllMocks();
   mockCacheData = {
     getAllIndexedFilePaths: [],

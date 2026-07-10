@@ -25,3 +25,4 @@ export {
   QdrantConnectionError, ModelLoadError, ConfigValidationError,
   isQdrantError, wrapQdrantError, isQdrantNotFoundError,
 } from './errors.js';
+export { clearClientCache } from './qdrant.js';
