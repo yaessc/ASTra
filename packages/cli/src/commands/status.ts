@@ -48,6 +48,7 @@ Model:           ${pico.dim(config.modelId)}`,
     } else {
       note('Could not connect to Qdrant. Is it running?', 'Error');
     }
+    return;
   } finally {
     closeCache();
   }

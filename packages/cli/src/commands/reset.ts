@@ -49,6 +49,7 @@ export async function resetCommand(options?: { dir?: string }): Promise<void> {
     } else {
       note('Could not reset the index. Is Qdrant running?', 'Error');
     }
+    return;
   } finally {
     closeCache();
   }

@@ -84,6 +84,7 @@ export async function verifyCommand(options?: { dir?: string; fix?: boolean }): 
     } else {
       note(err instanceof Error ? err.message : String(err), 'Error');
     }
+    return;
   }
 
   outro('Done');
