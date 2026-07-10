@@ -35,6 +35,14 @@ export function toQdrantPayload(payload: Record<string, unknown> | null | undefi
   return QdrantPayloadSchema.parse(payload ?? {}) as QdrantCodeChunkPayload;
 }
 
+function parseLegacyEntities(json: string): CodeEntity[] {
+  try {
+    return (JSON.parse(json) as Array<Record<string, unknown>>).map(e => ({ ...e, code: '' }) as CodeEntity);
+  } catch {
+    return [];
+  }
+}
+
 export function mapResult(r: {
   id: string | number;
   payload?: Record<string, unknown> | null;
@@ -53,7 +61,7 @@ export function mapResult(r: {
     entities: p.entities.length > 0
       ? p.entities.map(e => ({ ...e, code: '' }) as CodeEntity)
       : p.entitiesJson
-        ? (JSON.parse(p.entitiesJson) as Array<Record<string, unknown>>).map(e => ({ ...e, code: '' }) as CodeEntity)
+        ? parseLegacyEntities(p.entitiesJson)
         : [],
     language: p.language as SupportedLanguage,
     chunkType: p.chunkType as 'metadata' | 'body',

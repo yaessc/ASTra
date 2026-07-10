@@ -137,6 +137,23 @@ describe('mapResult', () => {
     expect(r.entities).toEqual([]);
   });
 
+  it('returns empty entities when entitiesJson is malformed JSON', () => {
+    const r = mapResult({
+      id: 'malformed',
+      payload: {
+        filePath: 'src/bad.ts',
+        startLine: 1,
+        endLine: 5,
+        entities: [],
+        entitiesJson: '{invalid json!!!}',
+        code: 'const x = 1;',
+        language: 'typescript',
+        chunkType: 'body',
+      },
+    });
+    expect(r.entities).toEqual([]);
+  });
+
   it('prefers native entities over entitiesJson when both present', () => {
     const r = mapResult({
       id: 'xyz',
