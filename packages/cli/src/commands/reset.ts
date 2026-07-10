@@ -1,27 +1,16 @@
 import {
   loadConfig, resetCollection, clearCache, getCacheDir, closeCache,
-  ConfigValidationError, QdrantConnectionError,
+  QdrantConnectionError,
 } from '@astra/core';
 import { intro, spinner, note, outro, confirm, isCancel } from '@clack/prompts';
 import pico from 'picocolors';
 import { resolve } from 'node:path';
+import { loadConfigOrExit } from '../utils/config.js';
 
 export async function resetCommand(options?: { dir?: string }): Promise<void> {
   const rootDir = resolve(options?.dir || '.');
-  let config;
-  try {
-    config = loadConfig(rootDir);
-  } catch (err) {
-    if (err instanceof ConfigValidationError) {
-      intro(pico.cyan('astra reset'));
-      for (const issue of err.issues) {
-        note(issue.message, 'Config Error');
-      }
-      outro('Fix astra.config.json and re-run.');
-      return;
-    }
-    throw err;
-  }
+  const config = loadConfigOrExit(rootDir, 'reset');
+  if (!config) return;
 
   intro(pico.cyan('astra reset'));
 

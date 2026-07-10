@@ -1,12 +1,13 @@
 import {
   loadConfig, verifyIndexIntegrity, repairIndex,
-  ConfigValidationError, QdrantConnectionError,
+  QdrantConnectionError,
   closeCache,
   type IndexVerificationReport,
 } from '@astra/core';
 import { intro, spinner, note, outro, confirm, isCancel } from '@clack/prompts';
 import pico from 'picocolors';
 import { resolve } from 'node:path';
+import { loadConfigOrExit } from '../utils/config.js';
 
 function formatReport(report: IndexVerificationReport): string {
   const lines: string[] = [];
@@ -22,21 +23,8 @@ function formatReport(report: IndexVerificationReport): string {
 
 export async function verifyCommand(options?: { dir?: string; fix?: boolean }): Promise<void> {
   const rootDir = resolve(options?.dir || '.');
-  let config;
-
-  try {
-    config = loadConfig(rootDir);
-  } catch (err) {
-    if (err instanceof ConfigValidationError) {
-      intro(pico.cyan('astra verify'));
-      for (const issue of err.issues) {
-        note(issue.message, 'Config Error');
-      }
-      outro('Fix astra.config.json and re-run.');
-      return;
-    }
-    throw err;
-  }
+  const config = loadConfigOrExit(rootDir, 'verify');
+  if (!config) return;
 
   intro(pico.cyan('astra verify'));
 

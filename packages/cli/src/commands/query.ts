@@ -1,11 +1,12 @@
 import {
   loadConfig, initEmbedder, searchHybrid,
-  ensureCollection, ConfigValidationError, QdrantConnectionError,
+  ensureCollection, QdrantConnectionError,
   type SearchMode, type AstraConfig, type SearchResult,
 } from '@astra/core';
 import { intro, spinner, note, outro, text, select, isCancel } from '@clack/prompts';
 import pico from 'picocolors';
 import { initModelWithProgress } from '../utils/progress.js';
+import { loadConfigOrExit } from '../utils/config.js';
 import { resolve, join } from 'node:path';
 import { spawn } from 'node:child_process';
 import { createEmphasize, common } from 'emphasize';
@@ -286,20 +287,8 @@ async function handleReplCommand(cmd: string): Promise<{ limit?: number; mode?: 
 
 export async function queryCommand(query?: string, options?: { limit?: string; mode?: string; dir?: string }): Promise<void> {
   const rootDir = resolve(options?.dir || '.');
-  let config;
-  try {
-    config = loadConfig(rootDir);
-  } catch (err) {
-    if (err instanceof ConfigValidationError) {
-      intro(pico.cyan('astra query'));
-      for (const issue of err.issues) {
-        note(issue.message, 'Config Error');
-      }
-      outro('Fix astra.config.json and re-run.');
-      return;
-    }
-    throw err;
-  }
+  const config = loadConfigOrExit(rootDir, 'query');
+  if (!config) return;
 
   intro(pico.cyan('astra query'));
 

@@ -4,31 +4,19 @@ import {
   chunkEntities, initEmbedder, ensureCollection, indexChunks, setIndexedFile, setIndexedFiles,
   getIndexedFile, getAllIndexedFilePaths,
   removeIndexedFilesBatch, removeIndexedChunksBatch, deleteFileChunksBatch,
-  getCacheDir, closeCache, wasCacheReset, ConfigValidationError, QdrantConnectionError,
+  getCacheDir, closeCache, wasCacheReset, QdrantConnectionError,
   type ScannedFile, type IndexedFile, type CodeChunk,
 } from '@astra/core';
 import { intro, spinner, note, outro } from '@clack/prompts';
 import pico from 'picocolors';
 import cliProgress from 'cli-progress';
 import { initModelWithProgress } from '../utils/progress.js';
+import { loadConfigOrExit } from '../utils/config.js';
 
 export async function indexCommand(dir: string = '.'): Promise<void> {
   const rootDir = resolve(dir || '.');
-  let config;
-
-  try {
-    config = loadConfig(rootDir);
-  } catch (err) {
-    if (err instanceof ConfigValidationError) {
-      intro(pico.cyan('astra index'));
-      for (const issue of err.issues) {
-        note(issue.message, 'Config Error');
-      }
-      outro('Fix astra.config.json and re-run.');
-      return;
-    }
-    throw err;
-  }
+  const config = loadConfigOrExit(rootDir, 'index');
+  if (!config) return;
 
   intro(pico.cyan('astra index'));
 
