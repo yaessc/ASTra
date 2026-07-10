@@ -24,6 +24,10 @@ export class ConfigValidationError extends Error {
   }
 }
 
+const CONNECTION_ERROR_CODES = [
+  'ECONNREFUSED', 'ECONNRESET', 'ETIMEDOUT', 'EAI_AGAIN', 'ENOTFOUND', 'EHOSTUNREACH',
+];
+
 export function isQdrantError(err: unknown): err is NodeJS.ErrnoException {
   if (!(err instanceof Error)) return false;
 
@@ -31,7 +35,7 @@ export function isQdrantError(err: unknown): err is NodeJS.ErrnoException {
   const code = (err as NodeJS.ErrnoException).code
     ?? (cause && typeof cause === 'object' && 'code' in cause ? (cause as Record<string, unknown>).code as string | undefined : undefined);
 
-  return code === 'ECONNREFUSED' || code === 'ECONNRESET' || code === 'ETIMEDOUT' || code === 'EAI_AGAIN';
+  return CONNECTION_ERROR_CODES.includes(code ?? '');
 }
 
 export function wrapQdrantError(err: unknown, url: string): QdrantConnectionError {
