@@ -1,5 +1,5 @@
 import {
-  loadConfig, verifyIndexIntegrity, repairIndex,
+  verifyIndexIntegrity, repairIndex,
   QdrantConnectionError,
   closeCache,
   type IndexVerificationReport,

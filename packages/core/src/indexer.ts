@@ -1,7 +1,7 @@
 import { QdrantClient } from '@qdrant/js-client-rest';
 import type { AstraConfig, CodeChunk, IndexStats, IndexVerificationReport, FileIntegrityEntry } from './types.js';
 import { embedBatch, getEmbeddingDimension } from './embedder.js';
-import { getCacheDir, storeChunkQdrantIds, removeIndexedChunksBatch, removeIndexedFilesBatch, getChunkQdrantIdsByFilePaths, getAllIndexedFilePaths, getLastIndexedMtime, getChunkCount, getAllChunkByFilePath, removeIndexedFile, removeIndexedChunks } from './cache.js';
+import { getCacheDir, storeChunkQdrantIds, removeIndexedChunksBatch, removeIndexedFilesBatch, getChunkQdrantIdsByFilePaths, getAllIndexedFilePaths, getLastIndexedMtime, getChunkCount, getAllChunkByFilePath } from './cache.js';
 import { QdrantConnectionError, isQdrantNotFoundError } from './errors.js';
 import { createClient, safeQdrantCall } from './qdrant.js';
 import { createHash } from 'node:crypto';

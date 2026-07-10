@@ -1,5 +1,5 @@
 import {
-  loadConfig, resetCollection, clearCache, getCacheDir, closeCache,
+  resetCollection, clearCache, getCacheDir, closeCache,
   QdrantConnectionError,
 } from '@astra/core';
 import { intro, spinner, note, outro, confirm, isCancel } from '@clack/prompts';

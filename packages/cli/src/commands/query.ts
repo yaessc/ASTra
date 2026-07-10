@@ -1,5 +1,5 @@
 import {
-  loadConfig, initEmbedder, searchHybrid,
+  initEmbedder, searchHybrid,
   ensureCollection, QdrantConnectionError,
   type SearchMode, type AstraConfig, type SearchResult,
 } from '@astra/core';

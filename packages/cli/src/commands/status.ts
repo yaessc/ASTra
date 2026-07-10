@@ -1,5 +1,5 @@
 import {
-  loadConfig, getIndexStats, closeCache,
+  getIndexStats, closeCache,
   QdrantConnectionError,
 } from '@astra/core';
 import { intro, spinner, note, outro } from '@clack/prompts';

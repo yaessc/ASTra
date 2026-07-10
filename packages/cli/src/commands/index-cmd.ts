@@ -1,6 +1,6 @@
 import { resolve } from 'node:path';
 import {
-  loadConfig, scanFiles, readFileWithHash, initLanguages, extractEntities,
+  scanFiles, readFileWithHash, initLanguages, extractEntities,
   chunkEntities, initEmbedder, ensureCollection, indexChunks, setIndexedFile, setIndexedFiles,
   getIndexedFile, getAllIndexedFilePaths,
   removeIndexedFilesBatch, removeIndexedChunksBatch, deleteFileChunksBatch,
