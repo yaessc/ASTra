@@ -105,13 +105,6 @@ async function openInEditor(filePath: string, line: number, rootDir: string): Pr
   const fullPath = join(rootDir, filePath);
   const attempts: string[] = [];
 
-  try {
-    await spawnAsync('code', ['-g', `${fullPath}:${line}`]);
-    return;
-  } catch {
-    attempts.push('VSCode (code)');
-  }
-
   const editor = process.env.EDITOR;
   if (editor) {
     try {
@@ -121,6 +114,13 @@ async function openInEditor(filePath: string, line: number, rootDir: string): Pr
     } catch {
       attempts.push(`EDITOR="${editor}"`);
     }
+  }
+
+  try {
+    await spawnAsync('code', ['-g', `${fullPath}:${line}`]);
+    return;
+  } catch {
+    attempts.push('VSCode (code)');
   }
 
   try {
