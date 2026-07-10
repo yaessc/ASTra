@@ -31,22 +31,35 @@ const KNOWN_DIMENSIONS: Record<string, number> = {
 let extractor: FeatureExtractor | null = null;
 let loadedModelId: string | null = null;
 const dimensionCache = new Map<string, number>();
+const initPromises = new Map<string, Promise<void>>();
 
 export async function initEmbedder(
   config: AstraConfig,
   onProgress?: (progress: ModelLoadProgress) => void,
 ): Promise<void> {
   if (extractor && loadedModelId === config.modelId) return;
+
+  let promise = initPromises.get(config.modelId);
+  if (promise) return promise;
+
   dimensionCache.delete(config.modelId);
-  try {
-    const { pipeline } = await import('@huggingface/transformers');
-    extractor = await pipeline('feature-extraction', config.modelId, {
-      progress_callback: onProgress,
-    }) as unknown as FeatureExtractor;
-    loadedModelId = config.modelId;
-  } catch (err) {
-    throw new ModelLoadError(`Failed to load embedding model "${config.modelId}"`, err);
-  }
+
+  promise = (async () => {
+    try {
+      const { pipeline } = await import('@huggingface/transformers');
+      extractor = await pipeline('feature-extraction', config.modelId, {
+        progress_callback: onProgress,
+      }) as unknown as FeatureExtractor;
+      loadedModelId = config.modelId;
+    } catch (err) {
+      throw new ModelLoadError(`Failed to load embedding model "${config.modelId}"`, err);
+    } finally {
+      initPromises.delete(config.modelId);
+    }
+  })();
+
+  initPromises.set(config.modelId, promise);
+  return promise;
 }
 
 export async function getEmbeddingDimension(config: AstraConfig): Promise<number> {
