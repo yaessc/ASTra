@@ -180,38 +180,38 @@ async function runSearch(query: string, limit: number, mode: SearchMode, config:
 }
 
 async function postSearchMenu(results: SearchResult[], rootDir: string): Promise<'search' | 'exit'> {
-  console.log(`\n  ${pico.dim('─'.repeat(60))}`);
+  while (true) {
+    console.log(`\n  ${pico.dim('─'.repeat(60))}`);
 
-  const action = await select({
-    message: 'What next?',
-    options: [
-      { value: 'open', label: 'Open in editor' },
-      { value: 'search', label: 'Search again' },
-      { value: 'exit', label: 'Exit' },
-    ],
-  });
-
-  if (isCancel(action) || action === 'exit') return 'exit';
-  if (action === 'search') return 'search';
-
-  if (action === 'open') {
-    const choices = results.map((r: SearchResult, i: number) => ({
-      value: i,
-      label: `${r.filePath}:${r.startLine}-${r.endLine} (${(r.score * 100).toFixed(0)}%)`,
-    }));
-
-    const selected = await select({
-      message: 'Which result to open?',
-      options: choices,
+    const action = await select({
+      message: 'What next?',
+      options: [
+        { value: 'open', label: 'Open in editor' },
+        { value: 'search', label: 'Search again' },
+        { value: 'exit', label: 'Exit' },
+      ],
     });
 
-    if (!isCancel(selected)) {
-      const r = results[selected as number];
-      await openInEditor(r.filePath, r.startLine, rootDir);
+    if (isCancel(action) || action === 'exit') return 'exit';
+    if (action === 'search') return 'search';
+
+    if (action === 'open') {
+      const choices = results.map((r: SearchResult, i: number) => ({
+        value: i,
+        label: `${r.filePath}:${r.startLine}-${r.endLine} (${(r.score * 100).toFixed(0)}%)`,
+      }));
+
+      const selected = await select({
+        message: 'Which result to open?',
+        options: choices,
+      });
+
+      if (!isCancel(selected)) {
+        const r = results[selected as number];
+        await openInEditor(r.filePath, r.startLine, rootDir);
+      }
     }
   }
-
-  return 'search';
 }
 
 async function handleReplCommand(cmd: string): Promise<{ limit?: number; mode?: SearchMode } | -1 | null> {
