@@ -83,6 +83,7 @@ astra query "auth middleware" -C /path/to/project     # from any directory
 | `astra index [path]` | Index a directory: parses ASTs, extracts entities, generates chunks (metadata + body), embeds with Transformers.js, and stores in Qdrant. Shows progress bars for model download and indexing. Uses SQLite cache for incremental re-indexing. |
 | `astra query [query]` | Search with a natural language query. Omit for **interactive REPL** (`:help`, `:clear`, `:history`, `:limit N`, `:mode M`, `:exit`). Supports `-n, --limit N`, `-m, --mode vector\|keyword\|hybrid`, and `-C, --dir <path>` to specify project root from any directory. Results include code preview with syntax highlighting and an "Open in editor" menu. |
 | `astra status [-C, --dir <path>]` | Show index statistics — total files, total chunks, last indexed timestamp, vector size (384), Qdrant URL, model ID |
+| `astra verify [-C, --dir <path>] [--fix]` | Verify index integrity — compares SQLite cache against Qdrant, reports missing/orphaned/mismatched files. Use `--fix` to automatically repair: deletes orphaned Qdrant points and flags missing files for re-index on next `astra index`. |
 | `astra reset [-C, --dir <path>]` | Clear the index and Qdrant collection. Prompts for confirmation before deleting. |
 
 ## What it extracts from code
@@ -138,7 +139,7 @@ semantic-code-search/
 │   │           ├── config.test.ts
 │   │           ├── entities.test.ts
 │   │           └── rrf-merge.test.ts
-│   └── cli/               # CLI: init, index, query, status, reset
+│   └── cli/               # CLI: init, index, query, status, verify, reset
 │       ├── package.json
 │       ├── tsconfig.json
 │       └── src/
@@ -148,8 +149,10 @@ semantic-code-search/
 │           │   ├── init.ts      # astra init
 │           │   ├── query.ts     # astra query + REPL
 │           │   ├── reset.ts     # astra reset
-│           │   └── status.ts    # astra status
+│           │   ├── status.ts    # astra status
+│           │   └── verify.ts    # astra verify [--fix]
 │           └── utils/
+│               ├── config.ts    # Config loader (Zod validation helper)
 │               └── progress.ts  # Progress bar manager (cli-progress)
 ├── docker-compose.yml     # Qdrant vector DB (v1.18.2)
 ├── tsconfig.base.json     # Shared TS config
