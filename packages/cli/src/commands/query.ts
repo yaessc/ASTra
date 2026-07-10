@@ -1,14 +1,14 @@
 import {
   loadConfig, initEmbedder, searchHybrid,
   ensureCollection, ConfigValidationError, QdrantConnectionError,
-  type SearchMode, type AstraConfig, type SearchResult, type ModelLoadProgress,
+  type SearchMode, type AstraConfig, type SearchResult,
 } from '@astra/core';
 import { intro, spinner, note, outro, text, select, isCancel } from '@clack/prompts';
 import pico from 'picocolors';
+import { initModelWithProgress } from '../utils/progress.js';
 import { resolve, join } from 'node:path';
 import { spawn } from 'node:child_process';
 import { createEmphasize, common } from 'emphasize';
-import { ProgressBarManager } from '../utils/progress.js';
 
 const emph = createEmphasize(common);
 
@@ -321,27 +321,8 @@ export async function queryCommand(query?: string, options?: { limit?: string; m
   const s = spinner();
   s.start('Initializing...');
 
-  const modelBar = new ProgressBarManager();
-  let lastFile = '';
-  const DOWNLOAD_FMT = `${pico.cyan('Downloading')} ${pico.dim('{file}')} |{bar}| ${pico.green('{percentage}%')} {loadedMb}/{totalMb} MB`;
-
   try {
-    await initEmbedder(config, (progress: ModelLoadProgress) => {
-      if (progress.status === 'initiate') {
-        lastFile = progress.file || '';
-        if (!modelBar.isRunning) {
-          modelBar.start(DOWNLOAD_FMT, 100, 0, { file: lastFile, loadedMb: '0.0', totalMb: '0.0' });
-        }
-      }
-      if (progress.status === 'progress' && modelBar.isRunning) {
-        const totalMb = ((progress.total ?? 0) / 1024 / 1024).toFixed(1);
-        const loadedMb = ((progress.loaded ?? 0) / 1024 / 1024).toFixed(1);
-        modelBar.update(progress.progress ?? 0, { file: lastFile, loadedMb, totalMb });
-      }
-      if (progress.status === 'done' || progress.status === 'ready') {
-        modelBar.stop();
-      }
-    });
+    await initModelWithProgress(config, initEmbedder);
 
     const warnings: string[] = [];
     await ensureCollection(config, (msg) => { warnings.push(msg); });
@@ -350,7 +331,6 @@ export async function queryCommand(query?: string, options?: { limit?: string; m
       note(w, 'Warning');
     }
   } catch (err) {
-    modelBar.stop();
     s.stop('Initialization failed');
     if (err instanceof QdrantConnectionError) {
       note(err.message, 'Qdrant Error');

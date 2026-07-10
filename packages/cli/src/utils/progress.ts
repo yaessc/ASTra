@@ -1,4 +1,6 @@
 import cliProgress from 'cli-progress';
+import pico from 'picocolors';
+import type { ModelLoadProgress, AstraConfig } from '@astra/core';
 
 export class ProgressBarManager {
   private bar: cliProgress.SingleBar | null = null;
@@ -40,5 +42,35 @@ export class ProgressBarManager {
     }
     this.bar = null;
     this._isRunning = false;
+  }
+}
+
+export async function initModelWithProgress(
+  config: AstraConfig,
+  initFn: (config: AstraConfig, onProgress: (progress: ModelLoadProgress) => void) => Promise<void>,
+): Promise<void> {
+  const modelBar = new ProgressBarManager();
+  let lastFile = '';
+  const DOWNLOAD_FMT = `${pico.cyan('Downloading')} ${pico.dim('{file}')} |{bar}| ${pico.green('{percentage}%')} {loadedMb}/{totalMb} MB`;
+
+  try {
+    await initFn(config, (progress: ModelLoadProgress) => {
+      if (progress.status === 'initiate') {
+        lastFile = progress.file || '';
+        if (!modelBar.isRunning) {
+          modelBar.start(DOWNLOAD_FMT, 100, 0, { file: lastFile, loadedMb: '0.0', totalMb: '0.0' });
+        }
+      }
+      if (progress.status === 'progress' && modelBar.isRunning) {
+        const totalMb = ((progress.total ?? 0) / 1024 / 1024).toFixed(1);
+        const loadedMb = ((progress.loaded ?? 0) / 1024 / 1024).toFixed(1);
+        modelBar.update(progress.progress ?? 0, { file: lastFile, loadedMb, totalMb });
+      }
+      if (progress.status === 'done' || progress.status === 'ready') {
+        modelBar.stop();
+      }
+    });
+  } finally {
+    modelBar.stop();
   }
 }

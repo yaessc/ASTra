@@ -5,12 +5,12 @@ import {
   getIndexedFile, getAllIndexedFilePaths,
   removeIndexedFilesBatch, removeIndexedChunksBatch, deleteFileChunksBatch,
   getCacheDir, closeCache, wasCacheReset, ConfigValidationError, QdrantConnectionError,
-  type ScannedFile, type IndexedFile, type CodeChunk, type ModelLoadProgress,
+  type ScannedFile, type IndexedFile, type CodeChunk,
 } from '@astra/core';
 import { intro, spinner, note, outro } from '@clack/prompts';
 import pico from 'picocolors';
 import cliProgress from 'cli-progress';
-import { ProgressBarManager } from '../utils/progress.js';
+import { initModelWithProgress } from '../utils/progress.js';
 
 export async function indexCommand(dir: string = '.'): Promise<void> {
   const rootDir = resolve(dir || '.');
@@ -42,28 +42,7 @@ export async function indexCommand(dir: string = '.'): Promise<void> {
     s.stop('Languages initialized');
 
     s.start('Initializing embedding model...');
-
-    const modelBar = new ProgressBarManager();
-    let lastFile = '';
-    const DOWNLOAD_FMT = `${pico.cyan('Downloading')} ${pico.dim('{file}')} |{bar}| ${pico.green('{percentage}%')} {loadedMb}/{totalMb} MB`;
-
-    await initEmbedder(config, (progress: ModelLoadProgress) => {
-      if (progress.status === 'initiate') {
-        lastFile = progress.file || '';
-        if (!modelBar.isRunning) {
-          modelBar.start(DOWNLOAD_FMT, 100, 0, { file: lastFile, loadedMb: '0.0', totalMb: '0.0' });
-        }
-      }
-      if (progress.status === 'progress' && modelBar.isRunning) {
-        const totalMb = ((progress.total ?? 0) / 1024 / 1024).toFixed(1);
-        const loadedMb = ((progress.loaded ?? 0) / 1024 / 1024).toFixed(1);
-        modelBar.update(progress.progress ?? 0, { file: lastFile, loadedMb, totalMb });
-      }
-      if (progress.status === 'done' || progress.status === 'ready') {
-        modelBar.stop();
-      }
-    });
-
+    await initModelWithProgress(config, initEmbedder);
     s.stop('Embedding model ready');
 
     s.start('Scanning files...');
