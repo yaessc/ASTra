@@ -173,8 +173,6 @@ export async function indexCommand(dir: string = '.'): Promise<void> {
 
     progressBar.start(totalChunks, 0, { speed: '0', eta_formatted: '--' });
 
-    let processedFiles = 0;
-    let errorCount = 0;
     const startTime = Date.now();
 
     const allFileChunks = allChunks.flatMap(({ chunks }) => chunks);
@@ -196,7 +194,6 @@ export async function indexCommand(dir: string = '.'): Promise<void> {
         hash: file.hash,
       }));
       setIndexedFiles(cacheDir, indexedFiles);
-      processedFiles = allChunks.length;
     } catch (err) {
       progressBar.stop();
       if (err instanceof QdrantConnectionError) {
