@@ -59,8 +59,11 @@ export async function getEmbeddingDimension(config: AstraConfig): Promise<number
     return known;
   }
 
-  if (!extractor) await initEmbedder(config);
-  const result = await extractor!('test', { pooling: 'mean', normalize: true });
+  if (!extractor) {
+    await initEmbedder(config);
+    if (!extractor) throw new ModelLoadError('Failed to initialize embedding model');
+  }
+  const result = await extractor('test', { pooling: 'mean', normalize: true });
   const dims = result.dims;
   const dimension = dims ? dims[dims.length - 1] : 384;
   dimensionCache.set(config.modelId, dimension);
@@ -68,8 +71,11 @@ export async function getEmbeddingDimension(config: AstraConfig): Promise<number
 }
 
 export async function embedText(text: string, config: AstraConfig): Promise<number[]> {
-  if (!extractor) await initEmbedder(config);
-  const result = await extractor!(text, { pooling: 'mean', normalize: true });
+  if (!extractor) {
+    await initEmbedder(config);
+    if (!extractor) throw new ModelLoadError('Failed to initialize embedding model');
+  }
+  const result = await extractor(text, { pooling: 'mean', normalize: true });
   return Array.from(result.data as Float32Array);
 }
 
@@ -77,14 +83,17 @@ export async function* embedBatch(
   chunks: CodeChunk[],
   config: AstraConfig,
 ): AsyncGenerator<{ chunk: CodeChunk; embedding: number[] }> {
-  if (!extractor) await initEmbedder(config);
+  if (!extractor) {
+    await initEmbedder(config);
+    if (!extractor) throw new ModelLoadError('Failed to initialize embedding model');
+  }
 
   const batchSize = 16;
 
   for (let i = 0; i < chunks.length; i += batchSize) {
     const batchChunks = chunks.slice(i, i + batchSize);
     const texts = batchChunks.map(c => formatCodeForEmbedding(c, config));
-    const output = await extractor!(texts, { pooling: 'mean', normalize: true });
+    const output = await extractor(texts, { pooling: 'mean', normalize: true });
     const dims = output.dims;
     const embeddingDim = dims ? dims[dims.length - 1] : 384;
 
