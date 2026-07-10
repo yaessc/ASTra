@@ -290,8 +290,13 @@ export async function verifyIndexIntegrity(config: AstraConfig, rootDir: string)
 
     let status: FileIntegrityEntry['status'];
     if (inCache && qdrantCount === 0) {
-      status = 'missing';
-      missingFromQdrant++;
+      if (cacheCount > 0) {
+        status = 'missing';
+        missingFromQdrant++;
+      } else {
+        status = 'ok';
+        ok++;
+      }
     } else if (!inCache && qdrantCount > 0) {
       status = 'orphaned';
       orphanedInQdrant++;

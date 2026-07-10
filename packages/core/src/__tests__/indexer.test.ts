@@ -317,6 +317,25 @@ describe('verifyIndexIntegrity', () => {
     expect(report.details[0].status).toBe('missing');
   });
 
+  it('classifies ok when zero-chunk file is in cache with no Qdrant points', async () => {
+    mockCacheData = {
+      getAllIndexedFilePaths: ['src/empty.ts'],
+      getAllChunkByFilePath: new Map([['src/empty.ts', []]]),
+      getChunkCount: 0,
+    };
+
+    mockScroll.mockResolvedValue({
+      points: [],
+      next_page_offset: null,
+    });
+
+    const report = await verifyIndexIntegrity(mockConfig, '/tmp');
+
+    expect(report.ok).toBe(1);
+    expect(report.missingFromQdrant).toBe(0);
+    expect(report.details[0].status).toBe('ok');
+  });
+
   it('classifies orphaned when Qdrant has points but cache has no record', async () => {
     mockCacheData = {
       getAllIndexedFilePaths: [],
