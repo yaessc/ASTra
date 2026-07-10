@@ -47,7 +47,7 @@ export async function resetCommand(options?: { dir?: string }): Promise<void> {
     if (err instanceof QdrantConnectionError) {
       note(err.message, 'Qdrant Error');
     } else {
-      note('Could not reset the index. Is Qdrant running?', 'Error');
+      note(err instanceof Error ? err.message : String(err), 'Error');
     }
     return;
   } finally {
