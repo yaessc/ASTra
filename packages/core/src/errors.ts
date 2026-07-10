@@ -46,9 +46,13 @@ export function wrapQdrantError(err: unknown, url: string): QdrantConnectionErro
   return new QdrantConnectionError(`${base}\n  ${err instanceof Error ? err.message : String(err)}`, err);
 }
 
+function isStatus404(cause: unknown): boolean {
+  if (typeof cause !== 'object' || cause == null) return false;
+  const status = (cause as Record<string, unknown>).status;
+  return typeof status === 'number' && status === 404;
+}
+
 export function isQdrantNotFoundError(err: unknown): boolean {
   if (!(err instanceof QdrantConnectionError)) return false;
-  return err.cause != null
-    && typeof err.cause === 'object'
-    && (err.cause as Record<string, unknown>).status === 404;
+  return isStatus404(err.cause);
 }

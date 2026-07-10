@@ -59,6 +59,12 @@ describe('isQdrantNotFoundError', () => {
     expect(isQdrantNotFoundError(err)).toBe(false);
   });
 
+  it('returns false when cause.status is a string', () => {
+    const cause = { status: '404' };
+    const err = new QdrantConnectionError('not found', cause);
+    expect(isQdrantNotFoundError(err)).toBe(false);
+  });
+
   it('returns false for non-QdrantConnectionError', () => {
     expect(isQdrantNotFoundError(new Error('other'))).toBe(false);
   });
