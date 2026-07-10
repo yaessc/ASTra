@@ -19,6 +19,15 @@ const LANG_MAP: Record<string, string> = {
 };
 
 const queryHistory: string[] = [];
+const MAX_HISTORY = 100;
+
+function pushHistory(entry: string): void {
+  queryHistory.push(entry);
+  if (queryHistory.length > MAX_HISTORY) {
+    queryHistory.splice(0, queryHistory.length - MAX_HISTORY);
+  }
+}
+
 const KNOWN_REPL = /^:/;
 
 function formatCode(code: string, language: string): string {
@@ -355,7 +364,7 @@ export async function queryCommand(query?: string, options?: { limit?: string; m
   let mode = modeRaw as SearchMode;
 
   if (query) {
-    queryHistory.push(query);
+    pushHistory(query);
     const results = await runSearch(query, limit, mode, config);
     if (results.length > 0) {
       await postSearchMenu(results, rootDir);
@@ -395,7 +404,7 @@ export async function queryCommand(query?: string, options?: { limit?: string; m
     }
 
     console.log(`  ${pico.dim(pico.cyan('›'))} ${pico.dim(trimmed)}`);
-    queryHistory.push(trimmed);
+    pushHistory(trimmed);
     try {
       const results = await runSearch(trimmed, limit, mode, config);
       if (results.length > 0) {
