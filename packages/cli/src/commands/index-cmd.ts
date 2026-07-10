@@ -109,7 +109,13 @@ export async function indexCommand(dir: string = '.'): Promise<void> {
     for (const f of files) {
       const cached = getIndexedFile(cacheDir, f.relativePath);
       if (cached && cached.mtime === f.mtime) continue;
-      const { content, hash } = readFileWithHash(f.path);
+      let content: string, hash: string;
+      try {
+        ({ content, hash } = readFileWithHash(f.path));
+      } catch {
+        note(`Could not read ${f.relativePath}: file may have been deleted or permissions changed. Skipping.`, 'Warning');
+        continue;
+      }
       if (cached && cached.hash === hash) {
         setIndexedFile(cacheDir, { path: f.relativePath, mtime: f.mtime, hash });
         continue;
