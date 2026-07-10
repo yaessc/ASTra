@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import pico from 'picocolors';
 import { Command } from 'commander';
+import pkg from '../package.json' with { type: 'json' };
 import { initCommand } from './commands/init.js';
 import { indexCommand } from './commands/index-cmd.js';
 import { queryCommand } from './commands/query.js';
@@ -13,7 +14,7 @@ const program = new Command();
 program
   .name('astra')
   .description('ASTra — semantic code search, powered by AST parsing and vector embeddings')
-  .version('0.1.0');
+  .version(pkg.version);
 
 program
   .command('init')
