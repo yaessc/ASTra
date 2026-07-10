@@ -218,6 +218,16 @@ export async function indexCommand(dir: string = '.'): Promise<void> {
       ` (${cachedCount} cached, ${processedFiles} indexed${errorCount > 0 ? `, ${errorCount} errors` : ''})` +
       `. Run ${pico.cyan('astra query')} to search.`
     );
+  } catch (err) {
+    try { modelBar.stop(); } catch { /* modelBar not yet initialized */ }
+    try { s.stop('Indexing failed'); } catch { /* spinner already stopped */ }
+    if (err instanceof QdrantConnectionError) {
+      note(err.message, 'Qdrant Error');
+    } else {
+      note(err instanceof Error ? err.message : String(err), 'Error');
+    }
+    outro('Indexing failed to start.');
+    return;
   } finally {
     closeCache();
   }

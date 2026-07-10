@@ -140,7 +140,9 @@ describe('indexCommand', () => {
     mockChunkEntities.mockReturnValue([]);
     mockEnsureCollection.mockRejectedValue(new MockQdrantConnectionError('Connection refused'));
 
-    await expect(indexCommand('/tmp')).rejects.toThrow('Connection refused');
+    await indexCommand('/tmp');
+
+    expect(note).toHaveBeenCalledWith('Connection refused', 'Qdrant Error');
   });
 });
 
