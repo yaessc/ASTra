@@ -16,7 +16,9 @@ function chunkToPayload(chunk: CodeChunk, maxBodyChars: number) {
     entityNames: chunk.entities.map(e => e.name),
     firstEntitySignature: chunk.entities[0]?.signature || '',
     entities,
-
+    // entitiesJson intentionally omitted — legacy pre-v4 field.
+    // Old Qdrant points still carry it; the read path in query.ts
+    // falls back to it when the native array is empty.
     code: chunk.content.slice(0, maxBodyChars),
     language: chunk.language,
     chunkType: chunk.chunkType,

@@ -48,6 +48,8 @@ export function mapResult(r: {
     endLine: p.endLine,
     score: r.score ?? 0,
     code: p.code,
+    // Prefer native entities array (current schema). Fall back to
+    // entitiesJson for points indexed before the migration (pre-v4).
     entities: p.entities.length > 0
       ? p.entities.map(e => ({ ...e, code: '' }) as CodeEntity)
       : p.entitiesJson

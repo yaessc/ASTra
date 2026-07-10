@@ -103,7 +103,7 @@ export interface QdrantCodeChunkPayload {
   entityNames: string[];
   firstEntitySignature: string;
   entities: Omit<CodeEntity, 'code'>[];
-  entitiesJson?: string;
+  entitiesJson?: string; // Legacy pre-v4 field; no longer written.
   code: string;
   language: string;
   chunkType: string;
