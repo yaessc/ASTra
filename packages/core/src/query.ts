@@ -115,6 +115,7 @@ export function rrfMerge(
   limit: number,
   k: number = 60,
 ): SearchResult[] {
+  if (k < 1) k = 1;
   const scores = new Map<string, { result: SearchResult; rrfScore: number }>();
 
   for (const list of [vectorResults, keywordResults]) {

@@ -29,4 +29,11 @@ describe('rrfMerge', () => {
     const idxB = results.findIndex(r => r.chunkId === 'B');
     expect(idxA).toBeLessThan(idxB);
   });
+
+  it('handles k=0 by clamping to minimum', () => {
+    const vector: SR[] = [makeResult('A', 'body')];
+    const results = rrfMerge(vector, [], 5, 0);
+    expect(results[0].score).toBeCloseTo(1.0, 5);
+    expect(results[0].chunkId).toBe('A');
+  });
 });
