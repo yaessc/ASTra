@@ -25,6 +25,7 @@ const mockConfig: AstraConfig = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockPipeline.mockResolvedValue(mockPipelineResult);
 });
 
 describe('formatCodeForEmbedding', () => {
@@ -105,12 +106,13 @@ describe('getEmbeddingDimension', () => {
     expect(mockPipeline).toHaveBeenCalledTimes(1);
   });
 
-  it('falls back to 384 when dims is undefined for unknown model', async () => {
+  it('throws ModelLoadError when dims is undefined for unknown model', async () => {
     vi.resetModules();
     mockPipeline.mockResolvedValue({ data: new Float32Array(384), dims: undefined });
     const { getEmbeddingDimension } = await import('../embedder.js');
-    const dim = await getEmbeddingDimension({ ...mockConfig, modelId: 'unknown-model' });
-    expect(dim).toBe(384);
+    await expect(
+      getEmbeddingDimension({ ...mockConfig, modelId: 'unknown-model' })
+    ).rejects.toThrow('Could not determine embedding dimension');
   });
 });
 

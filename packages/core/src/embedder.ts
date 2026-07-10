@@ -78,7 +78,10 @@ export async function getEmbeddingDimension(config: AstraConfig): Promise<number
   }
   const result = await extractor('test', { pooling: 'mean', normalize: true });
   const dims = result.dims;
-  const dimension = dims ? dims[dims.length - 1] : 384;
+  if (!dims || dims.length === 0) throw new ModelLoadError(
+    `Could not determine embedding dimension for model "${config.modelId}": model output missing dimension metadata`
+  );
+  const dimension = dims[dims.length - 1];
   dimensionCache.set(config.modelId, dimension);
   return dimension;
 }
@@ -108,7 +111,10 @@ export async function* embedBatch(
     const texts = batchChunks.map(c => formatCodeForEmbedding(c, config));
     const output = await extractor(texts, { pooling: 'mean', normalize: true });
     const dims = output.dims;
-    const embeddingDim = dims ? dims[dims.length - 1] : 384;
+    if (!dims || dims.length === 0) throw new ModelLoadError(
+      `Embedding batch failed for model "${config.modelId}": model output missing dimension metadata`
+    );
+    const embeddingDim = dims[dims.length - 1];
 
     for (let j = 0; j < batchChunks.length; j++) {
       const start = j * embeddingDim;
