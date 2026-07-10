@@ -35,7 +35,7 @@ Model:           ${pico.dim(config.modelId)}`,
     if (err instanceof QdrantConnectionError) {
       note(err.message, 'Qdrant Error');
     } else {
-      note('Could not connect to Qdrant. Is it running?', 'Error');
+      note(err instanceof Error ? err.message : String(err), 'Error');
     }
     return;
   } finally {
