@@ -30,14 +30,14 @@ const KNOWN_DIMENSIONS: Record<string, number> = {
 
 let extractor: FeatureExtractor | null = null;
 let loadedModelId: string | null = null;
-let cachedDimension: number | null = null;
+const dimensionCache = new Map<string, number>();
 
 export async function initEmbedder(
   config: AstraConfig,
   onProgress?: (progress: ModelLoadProgress) => void,
 ): Promise<void> {
   if (extractor && loadedModelId === config.modelId) return;
-  cachedDimension = null;
+  dimensionCache.delete(config.modelId);
   try {
     const { pipeline } = await import('@huggingface/transformers');
     extractor = await pipeline('feature-extraction', config.modelId, {
@@ -50,19 +50,21 @@ export async function initEmbedder(
 }
 
 export async function getEmbeddingDimension(config: AstraConfig): Promise<number> {
-  if (cachedDimension !== null) return cachedDimension;
+  const cached = dimensionCache.get(config.modelId);
+  if (cached !== undefined) return cached;
 
   const known = KNOWN_DIMENSIONS[config.modelId];
   if (known !== undefined) {
-    cachedDimension = known;
+    dimensionCache.set(config.modelId, known);
     return known;
   }
 
   if (!extractor) await initEmbedder(config);
   const result = await extractor!('test', { pooling: 'mean', normalize: true });
   const dims = result.dims;
-  cachedDimension = dims ? dims[dims.length - 1] : 384;
-  return cachedDimension;
+  const dimension = dims ? dims[dims.length - 1] : 384;
+  dimensionCache.set(config.modelId, dimension);
+  return dimension;
 }
 
 export async function embedText(text: string, config: AstraConfig): Promise<number[]> {
