@@ -1,6 +1,7 @@
 import {
   loadConfig, verifyIndexIntegrity, repairIndex,
   ConfigValidationError, QdrantConnectionError,
+  closeCache,
   type IndexVerificationReport,
 } from '@astra/core';
 import { intro, spinner, note, outro, confirm, isCancel } from '@clack/prompts';
@@ -85,6 +86,8 @@ export async function verifyCommand(options?: { dir?: string; fix?: boolean }): 
       note(err instanceof Error ? err.message : String(err), 'Error');
     }
     return;
+  } finally {
+    closeCache();
   }
 
   outro('Done');
