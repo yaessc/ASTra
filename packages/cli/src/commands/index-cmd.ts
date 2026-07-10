@@ -198,15 +198,16 @@ export async function indexCommand(dir: string = '.'): Promise<void> {
       setIndexedFiles(cacheDir, indexedFiles);
       processedFiles = allChunks.length;
     } catch (err) {
-      errorCount++;
+      progressBar.stop();
       if (err instanceof QdrantConnectionError) {
-        progressBar.stop();
         note(err.message, 'Qdrant Error');
         outro('Indexing stopped. Fix the issue and re-run.');
         return;
       }
       const msg = err instanceof Error ? err.message : String(err);
       note(`Indexing failed: ${msg}`, 'Warning');
+      outro('Indexing failed. Check warnings above.');
+      return;
     }
 
     progressBar.update(totalChunks, { speed: '0', eta_formatted: '--' });
@@ -215,7 +216,7 @@ export async function indexCommand(dir: string = '.'): Promise<void> {
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
     outro(
       `Indexed ${files.length} files in ${elapsed}s` +
-      ` (${cachedCount} cached, ${processedFiles} indexed${errorCount > 0 ? `, ${errorCount} errors` : ''})` +
+      ` (${cachedCount} cached, ${allChunks.length} indexed)` +
       `. Run ${pico.cyan('astra query')} to search.`
     );
   } catch (err) {
