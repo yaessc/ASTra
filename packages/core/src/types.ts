@@ -5,6 +5,8 @@ export const ENTITY_TYPES = [
   'enum', 'variable', 'decorator', 'export', 'import', 'field',
 ] as const;
 
+export type EntityType = typeof ENTITY_TYPES[number];
+
 export interface AstraConfig {
   include: string[];
   exclude: string[];
@@ -19,7 +21,7 @@ export interface AstraConfig {
 }
 
 export interface CodeEntity {
-  type: 'function' | 'method' | 'class' | 'interface' | 'type' | 'enum' | 'variable' | 'decorator' | 'export' | 'import' | 'field';
+  type: EntityType;
   name: string;
   filePath: string;
   startLine: number;
