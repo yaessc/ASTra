@@ -57,6 +57,7 @@ import {
   verifyIndexIntegrity, repairIndex,
 } from '../indexer.js';
 import { clearClientCache } from '../qdrant.js';
+import { getAllIndexedFilePaths, getAllChunkByFilePath } from '../cache.js';
 import { embedBatch } from '../embedder.js';
 import type { QdrantClient } from '@qdrant/js-client-rest';
 
@@ -435,24 +436,28 @@ describe('verifyIndexIntegrity', () => {
 });
 
 describe('repairIndex', () => {
-  it('deletes orphaned Qdrant points and removes missing cache entries', async () => {
-    mockCacheData = {
-      getAllIndexedFilePaths: ['src/missing.ts'],
-      getAllChunkByFilePath: new Map([['src/missing.ts', ['uuid-1']]]),
-      getChunkCount: 1,
-    };
+  it('deletes orphaned Qdrant points, removes missing cache entries, and returns post-repair report', async () => {
+    vi.mocked(getAllIndexedFilePaths)
+      .mockReturnValueOnce(['src/missing.ts'])
+      .mockReturnValueOnce([]);
+    vi.mocked(getAllChunkByFilePath)
+      .mockReturnValueOnce(new Map([['src/missing.ts', ['uuid-1']]]))
+      .mockReturnValueOnce(new Map());
 
-    mockScroll.mockResolvedValue({
-      points: [
-        { id: 'uuid-orphan', payload: { filePath: 'src/orphan.ts' } },
-      ],
-      next_page_offset: null,
-    });
+    mockScroll
+      .mockResolvedValueOnce({
+        points: [{ id: 'uuid-orphan', payload: { filePath: 'src/orphan.ts' } }],
+        next_page_offset: null,
+      })
+      .mockResolvedValueOnce({
+        points: [],
+        next_page_offset: null,
+      });
 
     const report = await repairIndex(mockConfig, '/tmp');
 
-    expect(report.missingFromQdrant).toBe(1);
-    expect(report.orphanedInQdrant).toBe(1);
+    expect(report.missingFromQdrant).toBe(0);
+    expect(report.orphanedInQdrant).toBe(0);
 
     // orphaned path was deleted from Qdrant
     expect(mockDelete).toHaveBeenCalledWith('test_collection', expect.objectContaining({

@@ -336,7 +336,7 @@ export async function repairIndex(config: AstraConfig, rootDir: string): Promise
     removeIndexedChunks(cacheDir, fp);
   }
 
-  return report;
+  return verifyIndexIntegrity(config, rootDir);
 }
 
 export async function resetCollection(config: AstraConfig): Promise<void> {
