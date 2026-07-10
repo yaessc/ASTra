@@ -219,8 +219,6 @@ export async function indexCommand(dir: string = '.'): Promise<void> {
       `. Run ${pico.cyan('astra query')} to search.`
     );
   } catch (err) {
-    try { modelBar.stop(); } catch { /* modelBar not yet initialized */ }
-    try { s.stop('Indexing failed'); } catch { /* spinner already stopped */ }
     if (err instanceof QdrantConnectionError) {
       note(err.message, 'Qdrant Error');
     } else {
