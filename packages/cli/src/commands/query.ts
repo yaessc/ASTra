@@ -100,12 +100,15 @@ function parseEditorCmd(s: string): { cmd: string; args: string[] } {
   return { cmd: args[0] ?? '', args: args.slice(1) };
 }
 
+function winQuoteArg(arg: string): string {
+  if (!/[ &|()<>^%"]/.test(arg)) return arg;
+  return `"${arg.replace(/"/g, '""')}"`;
+}
+
 function spawnAsync(cmd: string, args: string[]): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     const isWin = process.platform === 'win32';
-    const safeArgs = isWin
-      ? args.map(arg => arg.replace(/([\^&|()<>%])/g, '^$1'))
-      : args;
+    const safeArgs = isWin ? args.map(winQuoteArg) : args;
     const child = spawn(cmd, safeArgs, { stdio: 'inherit', shell: isWin });
     child.on('close', (code) => {
       if (code === 0) resolve();
