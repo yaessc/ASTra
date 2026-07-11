@@ -199,9 +199,12 @@ export function closeCache(): void {
     conn.close();
   }
   databases.clear();
+  resetFlags.clear();
 }
 
 export function wasCacheReset(cacheDir: string): boolean {
   getDb(cacheDir);
-  return resetFlags.get(cacheDir) ?? false;
+  const val = resetFlags.get(cacheDir) ?? false;
+  if (val) resetFlags.delete(cacheDir);
+  return val;
 }
