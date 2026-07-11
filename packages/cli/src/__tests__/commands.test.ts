@@ -91,7 +91,7 @@ vi.mock('@astra/core', () => ({
 }));
 
 import { indexCommand } from '../commands/index-cmd.js';
-import { queryCommand } from '../commands/query.js';
+import { queryCommand, handleReplCommand, queryHistory } from '../commands/query.js';
 import { statusCommand } from '../commands/status.js';
 import { resetCommand } from '../commands/reset.js';
 import { verifyCommand } from '../commands/verify.js';
@@ -188,6 +188,88 @@ describe('queryCommand', () => {
     await queryCommand('nonexistent query', { limit: '10', mode: 'hybrid' });
 
     expect(note).toHaveBeenCalledWith(expect.stringContaining('No results'), 'No matches');
+  });
+});
+
+describe('handleReplCommand', () => {
+  beforeEach(() => {
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    vi.spyOn(console, 'clear').mockImplementation(() => {});
+    queryHistory.length = 0;
+  });
+
+  it(':help returns null', async () => {
+    expect(await handleReplCommand(':help')).toBeNull();
+  });
+
+  it(':clear calls console.clear and returns null', async () => {
+    expect(await handleReplCommand(':clear')).toBeNull();
+    expect(console.clear).toHaveBeenCalled();
+  });
+
+  it(':history on empty history logs no-queries message', async () => {
+    expect(await handleReplCommand(':history')).toBeNull();
+    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('No queries yet'));
+  });
+
+  it(':history with entries logs numbered history', async () => {
+    queryHistory.push('query1', 'query2');
+    expect(await handleReplCommand(':history')).toBeNull();
+    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('1.'));
+    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('query1'));
+    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('2.'));
+    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('query2'));
+  });
+
+  it(':exit returns -1', async () => {
+    expect(await handleReplCommand(':exit')).toBe(-1);
+  });
+
+  it(':limit N returns { limit: N } for valid number', async () => {
+    const result = await handleReplCommand(':limit 5');
+    expect(result).toEqual({ limit: 5 });
+  });
+
+  it(':limit 0 returns null and logs usage', async () => {
+    expect(await handleReplCommand(':limit 0')).toBeNull();
+    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Usage'));
+  });
+
+  it(':limit negative returns null and logs usage', async () => {
+    expect(await handleReplCommand(':limit -1')).toBeNull();
+    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Usage'));
+  });
+
+  it(':limit with non-numeric arg returns null and logs usage', async () => {
+    expect(await handleReplCommand(':limit abc')).toBeNull();
+    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Usage'));
+  });
+
+  it(':limit with no arg returns null and logs usage', async () => {
+    expect(await handleReplCommand(':limit ')).toBeNull();
+    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Usage'));
+  });
+
+  it(':mode vector returns { mode: "vector" }', async () => {
+    expect(await handleReplCommand(':mode vector')).toEqual({ mode: 'vector' });
+  });
+
+  it(':mode keyword returns { mode: "keyword" }', async () => {
+    expect(await handleReplCommand(':mode keyword')).toEqual({ mode: 'keyword' });
+  });
+
+  it(':mode hybrid returns { mode: "hybrid" }', async () => {
+    expect(await handleReplCommand(':mode hybrid')).toEqual({ mode: 'hybrid' });
+  });
+
+  it(':mode with invalid value returns null and logs usage', async () => {
+    expect(await handleReplCommand(':mode invalid')).toBeNull();
+    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Usage'));
+  });
+
+  it('unknown command returns null and logs unknown message', async () => {
+    expect(await handleReplCommand(':foo')).toBeNull();
+    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Unknown command'));
   });
 });
 

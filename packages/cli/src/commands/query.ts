@@ -19,7 +19,7 @@ const LANG_MAP: Record<string, string> = {
   tsx: 'typescript',
 };
 
-const queryHistory: string[] = [];
+export const queryHistory: string[] = [];
 const MAX_HISTORY = 100;
 
 function pushHistory(entry: string): void {
@@ -231,7 +231,7 @@ async function postSearchMenu(results: SearchResult[], rootDir: string): Promise
   }
 }
 
-async function handleReplCommand(cmd: string): Promise<{ limit?: number; mode?: SearchMode } | -1 | null> {
+export async function handleReplCommand(cmd: string): Promise<{ limit?: number; mode?: SearchMode } | -1 | null> {
   switch (true) {
     case cmd === ':help':
       console.log(`
