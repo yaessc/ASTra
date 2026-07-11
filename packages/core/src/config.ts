@@ -2,7 +2,6 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { z } from 'zod';
 import { ConfigValidationError } from './errors.js';
-import type { AstraConfig } from './types.js';
 
 export const AstraConfigSchema = z.object({
   include: z.array(z.string()).default(['src/**/*.ts', 'src/**/*.tsx', 'src/**/*.js', 'src/**/*.jsx']),
@@ -30,6 +29,8 @@ export const AstraConfigSchema = z.object({
     });
   }
 });
+
+export type AstraConfig = z.infer<typeof AstraConfigSchema>;
 
 export function loadConfig(dir?: string): AstraConfig {
   const configDir = dir || process.cwd();

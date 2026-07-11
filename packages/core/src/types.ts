@@ -7,18 +7,7 @@ export const ENTITY_TYPES = [
 
 export type EntityType = typeof ENTITY_TYPES[number];
 
-export interface AstraConfig {
-  include: string[];
-  exclude: string[];
-  qdrantUrl: string;
-  collectionName: string;
-  modelId: string;
-  maxChunkSize: number;
-  maxBodyLines: number;
-  maxBodyChars: number;
-  linesPerBodyChunk: number;
-  chunkOverlap: number;
-}
+export type { AstraConfig } from './config.js';
 
 export interface CodeEntity {
   type: EntityType;
