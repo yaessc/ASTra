@@ -4,6 +4,7 @@ import { embedBatch, getEmbeddingDimension } from './embedder.js';
 import { getCacheDir, storeChunkQdrantIds, removeIndexedChunksBatch, removeIndexedFilesBatch, getChunkQdrantIdsByFilePaths, getAllIndexedFilePaths, getLastIndexedMtime, getChunkCount, getAllChunkByFilePath } from './cache.js';
 import { QdrantConnectionError, isQdrantNotFoundError } from './errors.js';
 import { createClient, safeQdrantCall } from './qdrant.js';
+import { truncateAtLineBoundary } from './parser.js';
 import { createHash } from 'node:crypto';
 
 function chunkToPayload(chunk: CodeChunk, maxBodyChars: number) {
@@ -19,7 +20,7 @@ function chunkToPayload(chunk: CodeChunk, maxBodyChars: number) {
     // entitiesJson intentionally omitted — legacy pre-v4 field.
     // Old Qdrant points still carry it; the read path in query.ts
     // falls back to it when the native array is empty.
-    code: chunk.content.slice(0, maxBodyChars),
+    code: truncateAtLineBoundary(chunk.content, maxBodyChars),
     language: chunk.language,
     chunkType: chunk.chunkType,
   };
