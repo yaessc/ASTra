@@ -42,9 +42,11 @@ function isTopLevel(node: SyntaxNode): boolean {
     if (current.type === 'program') return true;
     if (
       current.type === 'function_declaration' ||
+      current.type === 'generator_function_declaration' ||
       current.type === 'method_definition' ||
       current.type === 'arrow_function' ||
       current.type === 'function' ||
+      current.type === 'generator_function' ||
       current.type === 'for_statement' ||
       current.type === 'for_in_statement' ||
       current.type === 'for_of_statement' ||
