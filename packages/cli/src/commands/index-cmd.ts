@@ -20,6 +20,25 @@ export async function indexCommand(dir: string = '.'): Promise<void> {
 
   intro(pico.cyan('astra index'));
 
+  let interrupted = false;
+  let progressBar!: cliProgress.SingleBar;
+
+  function onInterrupt(signal: 'SIGINT' | 'SIGTERM') {
+    if (interrupted) return;
+    interrupted = true;
+    const exitCode = signal === 'SIGINT' ? 130 : 143;
+    progressBar?.stop();
+    try { s?.stop(''); } catch { /* spinner may not be started */ }
+    closeCache();
+    outro(`Indexing interrupted (${signal}). Re-run to continue.`);
+    process.exit(exitCode);
+  }
+
+  const onSigInt = () => onInterrupt('SIGINT');
+  const onSigTerm = () => onInterrupt('SIGTERM');
+  process.on('SIGINT', onSigInt);
+  process.on('SIGTERM', onSigTerm);
+
   const overallStart = Date.now();
 
   const s = spinner();
@@ -123,7 +142,7 @@ export async function indexCommand(dir: string = '.'): Promise<void> {
     const totalChunks = allChunks.reduce((sum, { chunks }) => sum + chunks.length, 0);
     s.stop(`Parsed ${changedFiles.length} files (${totalChunks} chunks)`);
 
-    const progressBar = new cliProgress.SingleBar({
+    progressBar = new cliProgress.SingleBar({
       format:
         `${pico.cyan('Indexing')} |{bar}| ` +
         `${pico.green('{percentage}%')} ` +
@@ -192,6 +211,8 @@ export async function indexCommand(dir: string = '.'): Promise<void> {
     outro('Indexing failed to start.');
     return;
   } finally {
-    closeCache();
+    process.removeListener('SIGINT', onSigInt);
+    process.removeListener('SIGTERM', onSigTerm);
+    if (!interrupted) closeCache();
   }
 }
