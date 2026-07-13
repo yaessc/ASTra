@@ -56,6 +56,22 @@ vi.mock('picocolors', () => ({
   },
 }));
 
+vi.mock('node:child_process', () => {
+  const EventEmitter = require('events');
+  return {
+    spawn: vi.fn(() => {
+      const child = new EventEmitter();
+      child.stdout = null;
+      child.stderr = null;
+      child.pid = 999;
+      child.connected = true;
+      child.kill = vi.fn();
+      process.nextTick(() => child.emit('error', new Error('spawn ENOENT')));
+      return child;
+    }),
+  };
+});
+
 vi.mock('@astra/core', () => ({
   loadConfig: mockLoadConfig,
   initEmbedder: mockInitEmbedder,
@@ -95,7 +111,23 @@ import { queryCommand, handleReplCommand, queryHistory } from '../commands/query
 import { statusCommand } from '../commands/status.js';
 import { resetCommand } from '../commands/reset.js';
 import { verifyCommand } from '../commands/verify.js';
-import { note } from '@clack/prompts';
+import { note, outro, select, text, isCancel } from '@clack/prompts';
+
+const defaultConfig = {
+  include: ['src/**/*.ts'],
+  exclude: [],
+  qdrantUrl: 'http://localhost:6333',
+  collectionName: 'test',
+  modelId: 'test-model',
+  maxChunkSize: 50, maxBodyLines: 150, maxBodyChars: 4000,
+  linesPerBodyChunk: 100, chunkOverlap: 25,
+};
+
+const mockResult = {
+  chunkId: '1', filePath: 'test.ts', startLine: 1, endLine: 10,
+  score: 0.9, code: 'function foo() {}', entities: [],
+  language: 'typescript' as const, chunkType: 'body' as const,
+};
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -188,6 +220,153 @@ describe('queryCommand', () => {
     await queryCommand('nonexistent query', { limit: '10', mode: 'hybrid' });
 
     expect(note).toHaveBeenCalledWith(expect.stringContaining('No results'), 'No matches');
+  });
+});
+
+describe('postSearchMenu via queryCommand', () => {
+  beforeEach(() => {
+    mockLoadConfig.mockReturnValue(defaultConfig);
+    mockInitEmbedder.mockResolvedValue(undefined);
+    mockEnsureCollection.mockResolvedValue({} as never);
+    mockSearchHybrid.mockResolvedValue([mockResult]);
+    queryHistory.length = 0;
+  });
+
+  it('exits when user selects Exit', async () => {
+    vi.mocked(select).mockResolvedValueOnce('exit');
+
+    await queryCommand('find foo', { limit: '10', mode: 'hybrid' });
+
+    expect(outro).toHaveBeenCalledWith('Done');
+  });
+
+  it('returns search when user selects Search again', async () => {
+    vi.mocked(select).mockResolvedValueOnce('search');
+
+    await queryCommand('find foo', { limit: '10', mode: 'hybrid' });
+
+    expect(outro).toHaveBeenCalledWith('Done');
+  });
+
+  it('re-enters loop after Open + file pick then exits', async () => {
+    vi.mocked(select)
+      .mockResolvedValueOnce('open')
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce('exit');
+
+    await queryCommand('find foo', { limit: '10', mode: 'hybrid' });
+
+    expect(outro).toHaveBeenCalledWith('Done');
+  });
+
+  it('re-enters loop after Open + cancel file pick then exits', async () => {
+    vi.mocked(select)
+      .mockResolvedValueOnce('open')
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce('exit');
+    vi.mocked(isCancel).mockReturnValueOnce(false).mockReturnValueOnce(true);
+
+    await queryCommand('find foo', { limit: '10', mode: 'hybrid' });
+
+    expect(outro).toHaveBeenCalledWith('Done');
+  });
+});
+
+describe('queryCommand interactive REPL', () => {
+  beforeEach(() => {
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    mockLoadConfig.mockReturnValue(defaultConfig);
+    mockInitEmbedder.mockResolvedValue(undefined);
+    mockEnsureCollection.mockResolvedValue({} as never);
+    mockSearchHybrid.mockResolvedValue([]);
+    queryHistory.length = 0;
+    vi.mocked(text).mockReset();
+    vi.mocked(select).mockReset();
+  });
+
+  it('exits on Ctrl+C at text prompt', async () => {
+    vi.mocked(isCancel).mockReturnValueOnce(true);
+
+    await queryCommand(undefined, { limit: '10', mode: 'hybrid' });
+
+    expect(outro).toHaveBeenCalledWith('Goodbye!');
+  });
+
+  it('skips empty input and continues to :exit', async () => {
+    vi.mocked(text)
+      .mockResolvedValueOnce('')
+      .mockResolvedValueOnce(':exit');
+
+    await queryCommand(undefined, { limit: '10', mode: 'hybrid' });
+
+    expect(outro).toHaveBeenCalledWith('Goodbye!');
+  });
+
+  it('exits via :exit command', async () => {
+    vi.mocked(text).mockResolvedValueOnce(':exit');
+
+    await queryCommand(undefined, { limit: '10', mode: 'hybrid' });
+
+    expect(outro).toHaveBeenCalledWith('Goodbye!');
+  });
+
+  it('updates limit via :limit command then exits', async () => {
+    vi.mocked(text)
+      .mockResolvedValueOnce(':limit 20')
+      .mockResolvedValueOnce(':exit');
+
+    await queryCommand(undefined, { limit: '10', mode: 'hybrid' });
+
+    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Limit set to 20'));
+    expect(outro).toHaveBeenCalledWith('Goodbye!');
+  });
+
+  it('updates mode via :mode keyword command then exits', async () => {
+    vi.mocked(text)
+      .mockResolvedValueOnce(':mode keyword')
+      .mockResolvedValueOnce(':exit');
+
+    await queryCommand(undefined, { limit: '10', mode: 'hybrid' });
+
+    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Mode set to keyword'));
+    expect(outro).toHaveBeenCalledWith('Goodbye!');
+  });
+
+  it('executes a search query and exits via menu', async () => {
+    mockSearchHybrid.mockResolvedValue([mockResult]);
+    vi.mocked(text)
+      .mockResolvedValueOnce('find foo')
+      .mockResolvedValueOnce(':exit');
+    vi.mocked(select).mockResolvedValueOnce('exit');
+
+    await queryCommand(undefined, { limit: '10', mode: 'hybrid' });
+
+    expect(mockSearchHybrid).toHaveBeenCalledWith('find foo', defaultConfig, 10, { mode: 'hybrid' });
+    expect(outro).toHaveBeenCalledWith('Goodbye!');
+  });
+
+  it('shows no-matches note on empty search results then continues', async () => {
+    mockSearchHybrid.mockResolvedValue([]);
+    vi.mocked(text)
+      .mockResolvedValueOnce('find foo')
+      .mockResolvedValueOnce(':exit');
+
+    await queryCommand(undefined, { limit: '10', mode: 'hybrid' });
+
+    expect(note).toHaveBeenCalled();
+    expect(outro).toHaveBeenCalledWith('Goodbye!');
+  });
+
+  it('handles search error gracefully then continues', async () => {
+    mockSearchHybrid.mockRejectedValue(new Error('Search crashed'));
+    vi.mocked(text)
+      .mockResolvedValueOnce('find foo')
+      .mockResolvedValueOnce(':exit');
+
+    await queryCommand(undefined, { limit: '10', mode: 'hybrid' });
+
+    expect(note).toHaveBeenCalledWith('Search crashed', 'Search Error');
+    expect(outro).toHaveBeenCalledWith('Goodbye!');
   });
 });
 
