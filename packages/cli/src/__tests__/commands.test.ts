@@ -57,6 +57,7 @@ vi.mock('picocolors', () => ({
 }));
 
 vi.mock('node:child_process', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const EventEmitter = require('events');
   return {
     spawn: vi.fn(() => {
