@@ -256,7 +256,7 @@ async function scrollAllQdrantPoints(config: AstraConfig): Promise<Map<string, n
   do {
     const result = await safeQdrantCall(async () => {
       return await client.scroll(config.collectionName, {
-        limit: 1000,
+        limit: 10000,
         offset: offset as (string | number | undefined),
         with_payload: { include: ['filePath'] },
         with_vector: false,
