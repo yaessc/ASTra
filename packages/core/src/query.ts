@@ -9,12 +9,12 @@ export type SearchMode = 'vector' | 'keyword' | 'hybrid';
 const EntityPayloadItemSchema = z.object({
   type: z.enum(ENTITY_TYPES).catch('function'),
   name: z.string(),
-  filePath: z.string().optional(),
-  startLine: z.number().optional(),
-  endLine: z.number().optional(),
-  signature: z.string().optional(),
-  docComment: z.string().optional(),
-  language: z.enum(['typescript', 'javascript', 'tsx']).optional(),
+  filePath: z.string().default(''),
+  startLine: z.number().default(0),
+  endLine: z.number().default(0),
+  signature: z.string().default(''),
+  docComment: z.string().default(''),
+  language: z.enum(['typescript', 'javascript', 'tsx']).default('typescript'),
 });
 
 const QdrantPayloadSchema = z.object({
@@ -37,7 +37,8 @@ export function toQdrantPayload(payload: Record<string, unknown> | null | undefi
 
 function parseLegacyEntities(json: string): CodeEntity[] {
   try {
-    return (JSON.parse(json) as Array<Record<string, unknown>>).map(e => ({ ...e, code: '' }) as CodeEntity);
+    const raw = JSON.parse(json) as Array<Record<string, unknown>>;
+    return raw.map(e => ({ ...EntityPayloadItemSchema.parse(e), code: '' }));
   } catch {
     return [];
   }
@@ -59,7 +60,7 @@ export function mapResult(r: {
     // Prefer native entities array (current schema). Fall back to
     // entitiesJson for points indexed before the migration (pre-v4).
     entities: p.entities.length > 0
-      ? p.entities.map(e => ({ ...e, code: '' }) as CodeEntity)
+      ? p.entities.map(e => ({ ...e, code: '' }))
       : p.entitiesJson
         ? parseLegacyEntities(p.entitiesJson)
         : [],

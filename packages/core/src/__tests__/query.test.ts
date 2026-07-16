@@ -60,7 +60,7 @@ describe('toQdrantPayload', () => {
     expect(p.filePath).toBe('src/a.ts');
     expect(p.startLine).toBe(10);
     expect(p.endLine).toBe(20);
-    expect(p.entities).toEqual([{ type: 'function', name: 'foo' }]);
+    expect(p.entities).toEqual([{ type: 'function', name: 'foo', filePath: '', startLine: 0, endLine: 0, signature: '', docComment: '', language: 'typescript' }]);
     expect(p.code).toBe('function foo() {}');
     expect(p.language).toBe('typescript');
   });
