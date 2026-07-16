@@ -10,8 +10,9 @@ export function findDocComment(node: SyntaxNode, source: string): string {
   }
 
   let current = target.previousSibling;
+  let boundary = target;
   while (current) {
-    const gap = source.slice(current.endIndex, target.startIndex);
+    const gap = source.slice(current.endIndex, boundary.startIndex);
     if (!/^\s*$/.test(gap)) break;
 
     if (current.type === 'comment' || current.type === 'block_comment') {
@@ -19,7 +20,10 @@ export function findDocComment(node: SyntaxNode, source: string): string {
       if (text.startsWith('/**') || text.startsWith('///')) {
         return text;
       }
+    } else {
+      break;
     }
+    boundary = current;
     current = current.previousSibling;
   }
   return '';
