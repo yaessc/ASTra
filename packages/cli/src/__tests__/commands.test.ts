@@ -109,6 +109,7 @@ vi.mock('@astra/core', () => ({
 
 import { indexCommand } from '../commands/index-cmd.js';
 import { queryCommand, handleReplCommand, queryHistory, winQuoteArg } from '../commands/query.js';
+import { maskUrl } from '../commands/status.js';
 import { statusCommand } from '../commands/status.js';
 import { resetCommand } from '../commands/reset.js';
 import { verifyCommand } from '../commands/verify.js';
@@ -634,5 +635,27 @@ describe('winQuoteArg', () => {
     expect(winQuoteArg('a<b')).toBe('"a<b"');
     expect(winQuoteArg('a>b')).toBe('"a>b"');
     expect(winQuoteArg('a^b')).toBe('"a^b"');
+  });
+});
+
+describe('maskUrl', () => {
+  it('strips username and password from https URL', () => {
+    expect(maskUrl('https://user:pass@localhost:6333')).toBe('https://localhost:6333/');
+  });
+
+  it('strips credentials and preserves path and query', () => {
+    expect(maskUrl('https://user:pass@host:6333/path?query=1')).toBe('https://host:6333/path?query=1');
+  });
+
+  it('passes through URL without credentials', () => {
+    expect(maskUrl('http://localhost:6333')).toBe('http://localhost:6333/');
+  });
+
+  it('passes through already clean URL', () => {
+    expect(maskUrl('http://localhost:6333/')).toBe('http://localhost:6333/');
+  });
+
+  it('returns the input unchanged on parse failure', () => {
+    expect(maskUrl('not-a-url')).toBe('not-a-url');
   });
 });

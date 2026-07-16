@@ -7,6 +7,19 @@ import pico from 'picocolors';
 import { resolve } from 'node:path';
 import { loadConfigOrExit } from '../utils/config.js';
 
+export function maskUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    if (parsed.username || parsed.password) {
+      parsed.username = '';
+      parsed.password = '';
+    }
+    return parsed.toString();
+  } catch {
+    return url;
+  }
+}
+
 export async function statusCommand(options?: { dir?: string }): Promise<void> {
   const rootDir = resolve(options?.dir || '.');
   const config = loadConfigOrExit(rootDir, 'status');
@@ -26,7 +39,7 @@ export async function statusCommand(options?: { dir?: string }): Promise<void> {
 Total files:     ${pico.yellow(String(stats.totalFiles))}
 Total chunks:    ${pico.yellow(String(stats.totalChunks))}
 ${stats.cacheChunkCount !== undefined ? `Cache chunks:    ${pico.yellow(String(stats.cacheChunkCount))}${stats.cacheChunkCount !== stats.totalChunks ? ` ${pico.yellow(pico.dim('⚠ count differs'))}` : ''}\n` : ''}${stats.lastIndexed ? `Last indexed:    ${pico.dim(stats.lastIndexed)}\n` : ''}Vector size:     ${stats.vectorSize !== null ? pico.green(String(stats.vectorSize)) : pico.dim('N/A')} (Cosine)
-Qdrant URL:      ${pico.dim(config.qdrantUrl)}
+Qdrant URL:      ${pico.dim(maskUrl(config.qdrantUrl))}
 Model:           ${pico.dim(config.modelId)}`,
       pico.cyan('Index Information'),
     );
