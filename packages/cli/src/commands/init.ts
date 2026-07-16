@@ -34,7 +34,10 @@ function generateConfig(answers: InitAnswers): string {
 
   const exclude: string[] = [];
   if (answers.excludeStandard) {
-    exclude.push('**/node_modules/**', '**/dist/**', '**/build/**');
+    exclude.push(
+      '**/node_modules/**', '**/dist/**', '**/build/**',
+      '**/*.test.ts', '**/*.spec.ts', '**/*.d.ts',
+    );
   }
   exclude.push(...answers.extraExcludes);
 
@@ -96,7 +99,7 @@ export async function initCommand(dir: string = '.'): Promise<void> {
   const extensions = extResult as string[];
 
   const excludeStdResult = await confirm({
-    message: 'Exclude standard directories (node_modules, dist, build)?',
+    message: 'Exclude standard directories and test files (node_modules, dist, build, *.test.*, *.spec.*, *.d.*)?',
     initialValue: true,
   });
 
