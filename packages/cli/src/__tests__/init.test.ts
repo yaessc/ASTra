@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { mkdtempSync, rmSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync, existsSync, readFileSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -48,6 +48,8 @@ afterEach(() => {
 
 describe('initCommand', () => {
   it('writes config file with user-provided answers', async () => {
+    mkdirSync(join(testDir, 'src'));
+    mkdirSync(join(testDir, 'lib'));
     mockText.mockResolvedValueOnce('src, lib').mockResolvedValueOnce('');
     mockMultiselect.mockResolvedValueOnce(['.ts', '.tsx']);
     mockConfirm.mockResolvedValueOnce(true);
@@ -83,6 +85,7 @@ describe('initCommand', () => {
   });
 
   it('handles extra exclude patterns', async () => {
+    mkdirSync(join(testDir, 'src'));
     mockText.mockResolvedValueOnce('src').mockResolvedValueOnce('**/*.test.ts, **/__tests__/**');
     mockMultiselect.mockResolvedValueOnce(['.ts']);
     mockConfirm.mockResolvedValueOnce(true);
@@ -93,10 +96,26 @@ describe('initCommand', () => {
     expect(config.exclude).toContain('**/*.test.ts');
     expect(config.exclude).toContain('**/__tests__/**');
   });
+
+  it('warns when a referenced directory does not exist', async () => {
+    mkdirSync(join(testDir, 'src'));
+    mockText.mockResolvedValueOnce('src, nonexistent').mockResolvedValueOnce('');
+    mockMultiselect.mockResolvedValueOnce(['.ts']);
+    mockConfirm.mockResolvedValueOnce(true);
+
+    await initCommand(testDir);
+
+    expect(mockNote).toHaveBeenCalledWith(
+      expect.stringContaining('nonexistent'),
+      expect.stringContaining('Spelling Warning'),
+    );
+  });
 });
 
 describe('generateConfig', () => {
   it('generates include patterns for multiple directories and extensions', async () => {
+    mkdirSync(join(testDir, 'src'));
+    mkdirSync(join(testDir, 'lib'));
     mockText.mockResolvedValueOnce('src, lib').mockResolvedValueOnce('');
     mockMultiselect.mockResolvedValueOnce(['.ts', '.tsx']);
     mockConfirm.mockResolvedValueOnce(true);
@@ -110,6 +129,7 @@ describe('generateConfig', () => {
   });
 
   it('includes standard excludes when excludeStandard is true', async () => {
+    mkdirSync(join(testDir, 'src'));
     mockText.mockResolvedValueOnce('src').mockResolvedValueOnce('');
     mockMultiselect.mockResolvedValueOnce(['.ts']);
     mockConfirm.mockResolvedValueOnce(true);
@@ -123,6 +143,7 @@ describe('generateConfig', () => {
   });
 
   it('omits standard excludes when excludeStandard is false', async () => {
+    mkdirSync(join(testDir, 'src'));
     mockText.mockResolvedValueOnce('src').mockResolvedValueOnce('');
     mockMultiselect.mockResolvedValueOnce(['.ts']);
     mockConfirm.mockResolvedValueOnce(false);
@@ -134,6 +155,7 @@ describe('generateConfig', () => {
   });
 
   it('generated config passes loadConfig validation', async () => {
+    mkdirSync(join(testDir, 'src'));
     mockText.mockResolvedValueOnce('src').mockResolvedValueOnce('');
     mockMultiselect.mockResolvedValueOnce(['.ts']);
     mockConfirm.mockResolvedValueOnce(true);

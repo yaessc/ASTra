@@ -84,6 +84,18 @@ export async function initCommand(dir: string = '.'): Promise<void> {
 
   const directories = dirsRaw.split(',').map(d => d.trim()).filter(Boolean);
 
+  const missingDirectories = directories.filter(
+    d => d !== '.' && !existsSync(resolve(targetDir, d))
+  );
+  if (missingDirectories.length > 0) {
+    note(
+      `These directories were not found under ${pico.cyan(targetDir)}:\n${
+        missingDirectories.map(d => pico.yellow(`  - ${d}`)).join('\n')
+      }`,
+      'Spelling Warning',
+    );
+  }
+
   const extResult = await multiselect({
     message: 'What file extensions do you want to index?',
     options: [
