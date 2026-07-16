@@ -100,9 +100,10 @@ function parseEditorCmd(s: string): { cmd: string; args: string[] } {
   return { cmd: args[0] ?? '', args: args.slice(1) };
 }
 
-function winQuoteArg(arg: string): string {
-  if (!/[ &|()<>^%"]/.test(arg)) return arg;
-  return `"${arg.replace(/"/g, '""')}"`;
+export function winQuoteArg(arg: string): string {
+  if (!/[ &|()<>^%"]/.test(arg) && !arg.endsWith('\\')) return arg;
+  const escaped = arg.replace(/"/g, '""').replace(/(\\*)$/, '$1$1');
+  return `"${escaped}"`;
 }
 
 function spawnAsync(cmd: string, args: string[]): Promise<void> {

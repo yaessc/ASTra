@@ -108,7 +108,7 @@ vi.mock('@astra/core', () => ({
 }));
 
 import { indexCommand } from '../commands/index-cmd.js';
-import { queryCommand, handleReplCommand, queryHistory } from '../commands/query.js';
+import { queryCommand, handleReplCommand, queryHistory, winQuoteArg } from '../commands/query.js';
 import { statusCommand } from '../commands/status.js';
 import { resetCommand } from '../commands/reset.js';
 import { verifyCommand } from '../commands/verify.js';
@@ -591,5 +591,48 @@ describe('verifyCommand', () => {
     await verifyCommand({ dir: '/tmp' });
 
     expect(note).toHaveBeenCalledWith(expect.stringContaining('Connection refused'), 'Qdrant Error');
+  });
+});
+
+describe('winQuoteArg', () => {
+  it('passes through plain args without special chars or trailing backslash', () => {
+    expect(winQuoteArg('C:\\Projects')).toBe('C:\\Projects');
+    expect(winQuoteArg('hello')).toBe('hello');
+  });
+
+  it('quotes args with spaces', () => {
+    expect(winQuoteArg('C:\\My Projects')).toBe('"C:\\My Projects"');
+  });
+
+  it('doubles trailing backslash to prevent quote escape', () => {
+    expect(winQuoteArg('C:\\My Projects\\')).toBe('"C:\\My Projects\\\\"');
+  });
+
+  it('handles bare root path with trailing backslash', () => {
+    expect(winQuoteArg('C:\\')).toBe('"C:\\\\"');
+  });
+
+  it('handles path with only trailing backslash and no other special chars', () => {
+    expect(winQuoteArg('C:\\Projects\\')).toBe('"C:\\Projects\\\\"');
+  });
+
+  it('escapes embedded double quotes', () => {
+    expect(winQuoteArg('file"name')).toBe('"file""name"');
+  });
+
+  it('handles combined spaces, quotes, and trailing backslash', () => {
+    expect(winQuoteArg('C:\\My "Files"\\')).toBe('"C:\\My ""Files""\\\\"');
+  });
+
+  it('leaves percent signs unescaped inside quotes', () => {
+    expect(winQuoteArg('C:\\%TEMP%\\file')).toBe('"C:\\%TEMP%\\file"');
+  });
+
+  it('quotes args with special operators', () => {
+    expect(winQuoteArg('a&b')).toBe('"a&b"');
+    expect(winQuoteArg('a|b')).toBe('"a|b"');
+    expect(winQuoteArg('a<b')).toBe('"a<b"');
+    expect(winQuoteArg('a>b')).toBe('"a>b"');
+    expect(winQuoteArg('a^b')).toBe('"a^b"');
   });
 });
