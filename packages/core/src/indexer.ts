@@ -62,13 +62,15 @@ export async function ensureCollection(
   }, config);
 
   try {
-    await safeQdrantCall(async () => {
-      await client.createPayloadIndex(config.collectionName, {
-        field_name: 'filePath',
-        field_schema: 'keyword',
-        wait: true,
-      });
-    }, config);
+    for (const field of ['filePath', 'entityTypes', 'chunkType', 'language']) {
+      await safeQdrantCall(async () => {
+        await client.createPayloadIndex(config.collectionName, {
+          field_name: field,
+          field_schema: 'keyword',
+          wait: true,
+        });
+      }, config);
+    }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     onWarning?.(`Could not create payload index (non-fatal): ${msg}`);
