@@ -22,6 +22,7 @@ export async function indexCommand(dir: string = '.'): Promise<void> {
 
   let interrupted = false;
   let progressBar!: cliProgress.SingleBar;
+  const s = spinner();
 
   function onInterrupt(signal: 'SIGINT' | 'SIGTERM') {
     if (interrupted) return;
@@ -40,8 +41,6 @@ export async function indexCommand(dir: string = '.'): Promise<void> {
   process.on('SIGTERM', onSigTerm);
 
   const overallStart = Date.now();
-
-  const s = spinner();
 
   try {
     s.start('Initializing languages...');
