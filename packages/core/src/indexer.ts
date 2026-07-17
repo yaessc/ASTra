@@ -106,6 +106,7 @@ export async function indexChunks(
     vector: { "dense": number[]; "bm25": { text: string; model: string } };
     payload: Record<string, unknown>;
   }[] = [];
+  const batchMappings: { chunk: CodeChunk; qdrantId: string }[] = [];
   const qdrantMappings: { chunk: CodeChunk; qdrantId: string }[] = [];
   let indexedCount = 0;
 
@@ -114,6 +115,7 @@ export async function indexChunks(
     onProgress?.(indexedCount);
     const qdrantId = chunkIdToUUID(chunk.id);
     qdrantMappings.push({ chunk, qdrantId });
+    batchMappings.push({ chunk, qdrantId });
 
     upsertBatch.push({
       id: qdrantId,
@@ -131,6 +133,14 @@ export async function indexChunks(
           points: upsertBatch,
         });
       }, config);
+      storeChunkQdrantIds(cacheDir, batchMappings.map(({ chunk, qdrantId }) => ({
+        chunkId: chunk.id,
+        filePath: chunk.filePath,
+        startLine: chunk.startLine,
+        endLine: chunk.endLine,
+        qdrantId,
+      })));
+      batchMappings.length = 0;
       upsertBatch = [];
     }
   }
@@ -142,6 +152,13 @@ export async function indexChunks(
         points: upsertBatch,
       });
     }, config);
+    storeChunkQdrantIds(cacheDir, batchMappings.map(({ chunk, qdrantId }) => ({
+      chunkId: chunk.id,
+      filePath: chunk.filePath,
+      startLine: chunk.startLine,
+      endLine: chunk.endLine,
+      qdrantId,
+    })));
   }
 
   // Phase 3: Delete stale old Qdrant points not in the new set

@@ -57,7 +57,7 @@ import {
   verifyIndexIntegrity, repairIndex,
 } from '../indexer.js';
 import { clearClientCache } from '../qdrant.js';
-import { getAllIndexedFilePaths, getAllChunkByFilePath, removeIndexedFilesBatch, removeIndexedChunksBatch } from '../cache.js';
+import { getAllIndexedFilePaths, getAllChunkByFilePath, removeIndexedFilesBatch, removeIndexedChunksBatch, storeChunkQdrantIds } from '../cache.js';
 import { embedBatch } from '../embedder.js';
 import type { QdrantClient } from '@qdrant/js-client-rest';
 
@@ -98,6 +98,7 @@ function makeChunk(overrides: Partial<CodeChunk> = {}): CodeChunk {
 beforeEach(() => {
   clearClientCache();
   vi.clearAllMocks();
+  mockUpsert.mockReset();
   mockCacheData = {
     getAllIndexedFilePaths: [],
     getAllChunkByFilePath: new Map(),
@@ -222,6 +223,24 @@ describe('indexChunks', () => {
     await expect(
       indexChunks([makeChunk({ id: 'c1' })], mockConfig, '/tmp', makeMockClient())
     ).rejects.toThrow(/connection|fetch|Qdrant/i);
+  });
+
+  it('updates cache incrementally after each batch upsert', async () => {
+    const chunks = [];
+    for (let i = 0; i < 250; i++) {
+      const filePath = i < 100 ? 'src/a.ts' : i < 200 ? 'src/b.ts' : 'src/c.ts';
+      chunks.push(makeChunk({ id: `c${i}`, filePath }));
+    }
+    vi.mocked(embedBatch).mockImplementation(async function* () {
+      for (const c of chunks) yield { chunk: c, embedding: [0.1, 0.2] };
+    });
+
+    await indexChunks(chunks, mockConfig, '/tmp', makeMockClient());
+
+    // 3 upsert calls: 2 full batches (100 each) + 1 partial batch (50)
+    expect(mockUpsert).toHaveBeenCalledTimes(3);
+    // storeChunkQdrantIds called for each of the 3 batches, plus once at end
+    expect(vi.mocked(storeChunkQdrantIds)).toHaveBeenCalledTimes(4);
   });
 });
 
