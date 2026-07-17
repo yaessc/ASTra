@@ -162,6 +162,10 @@ describe('scanFiles', () => {
     expect(langMap['src/app.js']).toBe('javascript');
     expect(langMap['src/app.jsx']).toBe('tsx');
   });
+
+  it('throws when rootDir does not exist', () => {
+    expect(() => scanFiles('/nonexistent/path', makeConfig())).toThrow(/does not exist/i);
+  });
 });
 
 describe('findGitignore', () => {

@@ -1,4 +1,4 @@
-import { readFileSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { globSync } from 'glob';
 import { createHash } from 'node:crypto';
@@ -47,6 +47,10 @@ function detectLanguage(filePath: string): SupportedLanguage | null {
 }
 
 export function scanFiles(rootDir: string, config: AstraConfig): ScanResult {
+  if (!existsSync(rootDir)) {
+    throw new Error(`Root directory does not exist: ${rootDir}`);
+  }
+
   const globalIg = ignore();
   globalIg.add(['node_modules', 'dist', 'build', '.git']);
 
