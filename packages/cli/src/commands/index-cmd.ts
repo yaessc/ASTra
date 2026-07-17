@@ -28,10 +28,10 @@ export async function indexCommand(dir: string = '.'): Promise<void> {
     if (interrupted) return;
     interrupted = true;
     const exitCode = signal === 'SIGINT' ? 130 : 143;
-    progressBar?.stop();
-    try { s?.stop(''); } catch { /* spinner may not be started */ }
-    closeCache();
-    outro(`Indexing interrupted (${signal}). Re-run to continue.`);
+    try { progressBar?.stop(); } catch { /* progressBar may not have been started */ }
+    try { s.stop(''); } catch { /* spinner may not have been started */ }
+    try { closeCache(); } catch { /* best-effort cache cleanup */ }
+    try { outro(`Indexing interrupted (${signal}). Re-run to continue.`); } catch { /* terminal may be corrupted */ }
     process.exit(exitCode);
   }
 
