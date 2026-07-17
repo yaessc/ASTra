@@ -82,8 +82,8 @@ astra query "auth middleware" -C /path/to/project     # from any directory
 | `astra init [path]` | Interactive wizard — prompts for directories, extensions, excludes; creates \`astra.config.json\` with ASCII banner |
 | `astra index [path]` | Index a directory: parses ASTs, extracts entities, generates chunks (metadata + body), embeds with Transformers.js, and stores in Qdrant. Shows progress bars for model download and indexing. Uses SQLite cache for incremental re-indexing. |
 | `astra query [query]` | Search with a natural language query. Omit for **interactive REPL** (`:help`, `:clear`, `:history`, `:limit N`, `:mode M`, `:exit`). Supports `-n, --limit N`, `-m, --mode vector\|keyword\|hybrid`, and `-C, --dir <path>` to specify project root from any directory. Results include code preview with syntax highlighting and an "Open in editor" menu. |
-| `astra status [-C, --dir <path>]` | Show index statistics — total files, total chunks, last indexed timestamp, vector size (384), Qdrant URL, model ID |
-| `astra verify [-C, --dir <path>] [--fix]` | Verify index integrity — compares SQLite cache against Qdrant, reports missing/orphaned/mismatched files. Use `--fix` to automatically repair: deletes orphaned Qdrant points and flags missing files for re-index on next `astra index`. |
+| `astra status [-C, --dir <path>]` | Show index statistics — total files, total chunks, last indexed timestamp, vector size (model-dependent: 384/768/1024), Qdrant URL, model ID |
+| `astra verify [-C, --dir <path>] [--fix]` | Verify index integrity — compares SQLite cache against Qdrant, reports missing/orphaned/mismatched files. Use `--fix` to automatically repair: deletes orphaned and mismatched Qdrant points, removes mismatched files from cache, and flags missing files for re-index on next `astra index`. |
 | `astra reset [-C, --dir <path>]` | Clear the index and Qdrant collection. Prompts for confirmation before deleting. |
 
 ## What it extracts from code
@@ -95,12 +95,13 @@ astra query "auth middleware" -C /path/to/project     # from any directory
 - **Type aliases**
 - **Enums**
 - **Variables** (const/let/var declarations)
-- **Exports** (named and default export declarations)
+- **Re-exports and barrel exports** (e.g. `export { x } from './y'`, `export * from './z'`);
+  declaration exports like `export class` are indexed under the declaration's own type, not "export".
 - **Imports** (import declarations)
 - **Decorators** (NestJS/Angular decorators)
 - **JSDoc** comments attached to each entity
 
-Each entity is dual-chunked into a **metadata chunk** (signature + JSDoc) and a **body chunk** (implementation), indexed alongside semantic embeddings for richer retrieval. Code between entities (e.g. top-level `app.use()` calls, startup logic) is also captured as separate body chunks so nothing is missed.
+Each entity produces a **metadata chunk** (signature + JSDoc) and a **body chunk** (implementation), indexed alongside semantic embeddings for richer retrieval. Metadata chunks are omitted when the signature is very short and no JSDoc is attached. Code between entities (e.g. top-level `app.use()` calls, startup logic) is also captured as separate body chunks so nothing is missed.
 
 ## Architecture
 
@@ -134,11 +135,19 @@ semantic-code-search/
 │   │       ├── qdrant.ts      # Qdrant client creation & safe-call helpers
 │   │       ├── errors.ts      # Custom error classes & helpers
 │   │       ├── types.ts       # Shared TypeScript type definitions
-│   │       └── __tests__/     # Vitest test suite
+│   │       └── __tests__/     # Vitest test suite (12 files)
+│   │           ├── cache.test.ts
 │   │           ├── chunker.test.ts
 │   │           ├── config.test.ts
+│   │           ├── doc-comment.test.ts
+│   │           ├── embedder.test.ts
 │   │           ├── entities.test.ts
-│   │           └── rrf-merge.test.ts
+│   │           ├── errors.test.ts
+│   │           ├── indexer.test.ts
+│   │           ├── languages.test.ts
+│   │           ├── query.test.ts
+│   │           ├── rrf-merge.test.ts
+│   │           └── scanner.test.ts
 │   └── cli/               # CLI: init, index, query, status, verify, reset
 │       ├── package.json
 │       ├── tsconfig.json
@@ -151,9 +160,12 @@ semantic-code-search/
 │           │   ├── reset.ts     # astra reset
 │           │   ├── status.ts    # astra status
 │           │   └── verify.ts    # astra verify [--fix]
-│           └── utils/
-│               ├── config.ts    # Config loader (Zod validation helper)
-│               └── progress.ts  # Progress bar manager (cli-progress)
+│           ├── utils/
+│           │   ├── config.ts    # Config loader (Zod validation helper)
+│           │   └── progress.ts  # Progress bar manager (cli-progress)
+│           └── __tests__/     # Vitest test suite (2 files)
+│               ├── commands.test.ts
+│               └── init.test.ts
 ├── docker-compose.yml     # Qdrant vector DB (v1.18.2)
 ├── tsconfig.base.json     # Shared TS config
 ├── turbo.json             # Turborepo task definitions
@@ -166,7 +178,7 @@ Use `--mode` / `-m` to control how queries are matched:
 
 | Mode | Behavior |
 |------|----------|
-| `vector` | Cosine similarity on 384-dim dense embeddings (semantic meaning) — uses named vector `"dense"` |
+| `vector` | Cosine similarity on model-dim dense embeddings (semantic meaning) — uses named vector `"dense"` |
 | `keyword` | Full-text BM25 keyword search via Qdrant server-side sparse vectors — uses named vector `"bm25"` |
 | `hybrid` | RRF (Reciprocal Rank Fusion, k=60) — merges vector + keyword results with a metadata relevance boost |
 
@@ -187,13 +199,17 @@ Default is `hybrid`.
   "qdrantUrl": "http://localhost:6333",
   "collectionName": "code_chunks",
   "modelId": "Xenova/all-MiniLM-L6-v2",
-  "maxChunkSize": 50
+  "maxChunkSize": 50,
+  "maxBodyLines": 150,
+  "maxBodyChars": 4000,
+  "linesPerBodyChunk": 100,
+  "chunkOverlap": 25
 }
 ```
 
 Validated at runtime with **Zod** — misconfigured values produce clear error messages.
 
-> `maxChunkSize` is a legacy fallback that only applies when a file has **zero AST entities** (e.g. plain config files). In that case, the file is split into fixed-size windows of this many lines. When entities are present, each entity produces its own body chunk(s) split at 150 lines / 4000 chars, and code between entities is also captured.
+> `maxChunkSize` is a legacy fallback that only applies when a file has **zero AST entities** (e.g. plain config files). In that case, the file is split into fixed-size windows of this many lines. When entities are present, chunking is driven by the other four options: `maxBodyLines` (150), `maxBodyChars` (4000), `linesPerBodyChunk` (100), and `chunkOverlap` (25).
 
 ## Interactive REPL
 
@@ -221,7 +237,7 @@ Running `astra query` without arguments starts a REPL:
 |-----------|-----------|
 | AST Parser | `web-tree-sitter` (WASM, TypeScript/JavaScript) |
 | Embeddings | `Xenova/all-MiniLM-L6-v2` via `@huggingface/transformers` v3 |
-| Vector DB | Qdrant (Docker v1.18.2), Cosine distance, 384-dim dense + BM25 sparse vectors |
+| Vector DB | Qdrant (Docker v1.18.2), Cosine distance, model-dim dense + BM25 sparse vectors |
 | Search modes | Vector (dense) + BM25 keyword (sparse) + Hybrid (RRF fusion, k=60) |
 | Cache | SQLite via `better-sqlite3` (per-project, `.astra/cache/`) |
 | Config validation | Zod |
