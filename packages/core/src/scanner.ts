@@ -18,14 +18,21 @@ const ignore = createRequire(import.meta.url)('ignore') as {
   };
 };
 
-export function findGitignore(dir: string): { dir: string; content: string }[] {
+export function findGitignore(dir: string, warnings?: string[]): { dir: string; content: string }[] {
   const results: { dir: string; content: string }[] = [];
   let current = dir;
   while (true) {
     try {
       const content = readFileSync(join(current, '.gitignore'), 'utf-8');
       results.push({ dir: current, content });
-    } catch { /* no .gitignore in this directory */ }
+    } catch (err) {
+      if (err && typeof err === 'object' && 'code' in err) {
+        const nodeErr = err as NodeJS.ErrnoException;
+        if (nodeErr.code !== 'ENOENT') {
+          warnings?.push(`Could not read ${join(current, '.gitignore')}: ${nodeErr.code}`);
+        }
+      }
+    }
     const parent = resolve(current, '..');
     if (parent === current) break;
     try {
@@ -54,7 +61,8 @@ export function scanFiles(rootDir: string, config: AstraConfig): ScanResult {
   const globalIg = ignore();
   globalIg.add(['node_modules', 'dist', 'build', '.git']);
 
-  const gitignoreEntries = findGitignore(rootDir).map(e => {
+  const warnings: string[] = [];
+  const gitignoreEntries = findGitignore(rootDir, warnings).map(e => {
     const ig = ignore();
     ig.add(e.content);
     return { ig, dir: e.dir };
@@ -68,7 +76,6 @@ export function scanFiles(rootDir: string, config: AstraConfig): ScanResult {
   });
 
   const files: ScannedFile[] = [];
-  const warnings: string[] = [];
 
   for (const filePath of allFiles) {
     try {
