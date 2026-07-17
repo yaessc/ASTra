@@ -96,6 +96,6 @@ export interface QdrantCodeChunkPayload {
   entities: Omit<CodeEntity, 'code'>[];
   entitiesJson?: string; // Legacy pre-v4 field; no longer written.
   code: string;
-  language: string;
-  chunkType: string;
+  language: SupportedLanguage;
+  chunkType: 'metadata' | 'body';
 }

@@ -1,4 +1,4 @@
-import type { AstraConfig, CodeEntity, SearchResult, QdrantCodeChunkPayload, SupportedLanguage } from './types.js';
+import type { AstraConfig, CodeEntity, SearchResult, QdrantCodeChunkPayload } from './types.js';
 import { ENTITY_TYPES } from './types.js';
 import { embedText } from './embedder.js';
 import { createClient, safeQdrantCall } from './qdrant.js';
@@ -27,12 +27,12 @@ const QdrantPayloadSchema = z.object({
   entities: z.array(EntityPayloadItemSchema).catch([]),
   entitiesJson: z.string().optional().catch(undefined),
   code: z.string().catch(''),
-  language: z.string().catch('typescript'),
-  chunkType: z.string().catch('body'),
+  language: z.enum(['typescript', 'javascript', 'tsx']).catch('typescript'),
+  chunkType: z.enum(['metadata', 'body']).catch('body'),
 });
 
 export function toQdrantPayload(payload: Record<string, unknown> | null | undefined): QdrantCodeChunkPayload {
-  return QdrantPayloadSchema.parse(payload ?? {}) as QdrantCodeChunkPayload;
+  return QdrantPayloadSchema.parse(payload ?? {});
 }
 
 function parseLegacyEntities(json: string): CodeEntity[] {
@@ -64,8 +64,8 @@ export function mapResult(r: {
       : p.entitiesJson
         ? parseLegacyEntities(p.entitiesJson)
         : [],
-    language: p.language as SupportedLanguage,
-    chunkType: p.chunkType as 'metadata' | 'body',
+    language: p.language,
+    chunkType: p.chunkType,
   };
 }
 
