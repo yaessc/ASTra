@@ -36,4 +36,11 @@ describe('rrfMerge', () => {
     expect(results[0].score).toBeCloseTo(1.0, 5);
     expect(results[0].chunkId).toBe('A');
   });
+
+  it('metadata chunks normalize to their own ceiling without clamping', () => {
+    const vector: SR[] = [makeResult('M', 'metadata')];
+    const keyword: SR[] = [makeResult('M', 'metadata')];
+    const results = rrfMerge(vector, keyword, 5);
+    expect(results[0].score).toBeCloseTo(1.0, 5);
+  });
 });

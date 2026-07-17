@@ -136,14 +136,15 @@ export function rrfMerge(
 
   const listCount = (vectorResults.length > 0 ? 1 : 0) + (keywordResults.length > 0 ? 1 : 0);
   if (listCount === 0) return [];
-  const maxRrf = listCount / k;
+  const bodyMax = listCount / k;
+  const metaMax = listCount * METADATA_BOOST / k;
 
   return [...scores.values()]
     .sort((a, b) => b.rrfScore - a.rrfScore)
     .slice(0, limit)
     .map(entry => ({
       ...entry.result,
-      score: Math.min(entry.rrfScore / maxRrf, 1.0),
+      score: Math.min(entry.rrfScore / (entry.result.chunkType === 'metadata' ? metaMax : bodyMax), 1.0),
     }));
 }
 
